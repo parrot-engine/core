@@ -1,0 +1,6 @@
+.cache/
+
+test
+stb_ds.h
+
+compile_commands.json
