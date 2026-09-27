@@ -1,10 +1,10 @@
 CC=gcc
 
-CFLAGS=-std=c99 -Wall -Werror -pedantic-errors
+CFLAGS=-std=c99 -Wall -Werror -pedantic-errors $(EXTRA_CFLAGS)
 
 UNAME=$(shell uname -s)
 ifeq ($(UNAME),Linux)
-CFLAGS += -DPARROT_PLATFORM_LINUX
+CFLAGS += -DPARROT_PLATFORM_UNIX -DPARROT_PLATFORM_LINUX
 endif
 
 OUTPUT=test

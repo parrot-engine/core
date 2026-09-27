@@ -26,6 +26,12 @@
  * PARROT_CORE_IMPL_CORE
  *	Implement the core part of this library (Requires PARROT_CORE_IMPL)
  *
+ * PARROT_PLATFORM_UNIX
+ *  Marks the current platform as unix based
+ *
+ * PARROT_PLATFORM_LINUX
+ *  Marks the current platform as linux
+ *
  */
 
 #ifndef PARROT_CORE_SELECTIVE
@@ -2880,11 +2886,13 @@ void ParrotBuffer_write_ascii(ParrotBuffer *self, const char *str) {
 
 #ifdef PARROT_CORE_TIMING
 
+#ifdef PARROT_PLATFORM_UNIX
 #define __USE_POSIX199309
 #include <time.h>
+#endif
 
 uint64_t Parrot_get_performance_counter(void) {
-#ifdef PARROT_PLATFORM_LINUX
+#ifdef PARROT_PLATFORM_UNIX
     struct timespec time;
     clock_gettime(/* Would use CLOCK_MONOTONIC_RAW if not linux specific */ CLOCK_MONOTONIC, &time);
     return time.tv_nsec + (time.tv_sec * 1e9L);
@@ -2892,7 +2900,7 @@ uint64_t Parrot_get_performance_counter(void) {
 }
 
 uint64_t Parrot_get_performance_frequency(void) {
-#ifdef PARROT_PLATFORM_LINUX
+#ifdef PARROT_PLATFORM_UNIX
     struct timespec resolution;
     clock_getres(CLOCK_MONOTONIC, &resolution);
     return resolution.tv_nsec != 0 ?
@@ -2902,7 +2910,7 @@ uint64_t Parrot_get_performance_frequency(void) {
 }
 
 void Parrot_sleep(float seconds) {
-#ifdef PARROT_PLATFORM_LINUX
+#ifdef PARROT_PLATFORM_UNIX
     struct timespec time = {
         .tv_sec = seconds,
         .tv_nsec = (long)(fmod(seconds, 1.0) * 1e9),
