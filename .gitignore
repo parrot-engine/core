@@ -1,6 +1,5 @@
 .cache/
 
-test
-stb_ds.h
+build/
 
 compile_commands.json

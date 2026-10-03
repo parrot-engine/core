@@ -1,9 +1,8 @@
 #define STB_DS_IMPLEMENTATION
-#include "stb_ds.h"
+#include "parrot/core/stb_ds.h"
 
-#define PARROT_CORE_IMPL
-#define PARROT_CORE_IMPL_CORE
-#include "core.h"
+#include "parrot/core/math.h"
+#include "parrot/core/os.h"
 
 #include <stdio.h>
 
@@ -12,7 +11,7 @@
 ParrotMat matrices[ITERATIONS] = {0};
 
 int main(void) {
-    uint64_t begin = Parrot_get_performance_counter();
+    uint64_t begin = Parrot_os_get_performance_counter();
 
     ParrotTransform transform = ParrotTransform_new();
 
@@ -23,7 +22,7 @@ int main(void) {
         matrices[i] = ParrotTransform_calculate_matrix(&transform);
     }
 
-    float time = (float)(Parrot_get_performance_counter() - begin) / Parrot_get_performance_frequency();
+    float time = (float)(Parrot_os_get_performance_counter() - begin) / Parrot_os_get_performance_frequency();
 
     for (size_t i = 1; i < ITERATIONS; i++) {
         for (int x = 0; x < 4; x++) {
@@ -44,5 +43,6 @@ int main(void) {
     }
 
     printf("Took: %fs (%d iterations)\n", time, ITERATIONS);
+
     return 0;
 }
