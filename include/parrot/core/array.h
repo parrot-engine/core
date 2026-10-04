@@ -48,9 +48,9 @@
 #define ParrotArray_put(arr, value) ParrotArray_put_key(arr, value, &(value).key, sizeof((value).key));
 #define ParrotArray_puts(arr, value) ParrotArray_put_key(arr, value, (value).key, strlen((value).key));
 /// Returns <0 if not found
-#define ParrotArray_find(arr, key) ParrotArray_findx(arr, &(key), sizeof(key))
+#define ParrotArray_find(arr, key) ((arr) ? ParrotArray_findx(arr, &(key), sizeof(key)) : -1)
 /// Returns NULL if not found
-#define ParrotArray_findp(arr, key) ParrotArray_findpx(arr, &(key), sizeof(key))
+#define ParrotArray_findp(arr, key) ((arr) ? ParrotArray_findpx(arr, &(key), sizeof(key)) : NULL)
 
 PARROT_API void *ParrotArray_initx(size_t element_size, size_t initial_capacity);
 PARROT_API void ParrotArray_freex(void *arr);
