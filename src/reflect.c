@@ -1,9 +1,9 @@
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
 
-#include "parrot/core/scope.h"
+#include "parrot/core/array.h"
 #include "parrot/core/reflect.h"
-#include "parrot/core/stb_ds.h"
+#include "parrot/core/scope.h"
 
 #define FAIL_INVALID_TYPE(type) PARROT_FAIL_FMT("Unknown entry type: %d", type)
 #define FAIL_REGISTERED_TYPE(type)                                                                                      \
@@ -107,8 +107,8 @@ ParrotReflect *ParrotReflect_new(void) {
 
     self->scope = ParrotScope_new(NULL);
 
-    ParrotScope_push_shfree(self->scope, self->sh_types);
-    ParrotScope_push_shfree(self->scope, self->sh_aliases);
+    ParrotScope_push_arrfree(self->scope, self->sh_types);
+    ParrotScope_push_arrfree(self->scope, self->sh_aliases);
 
     ParrotReflect_register(self, builtin_collection);
     return self;
@@ -137,12 +137,12 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
     type_info.sh_fields = malloc(sizeof(type_info.sh_fields));
     ParrotScope_push_free(type_info.scope, type_info.sh_fields);
     *type_info.sh_fields = NULL;
-    ParrotScope_push_shfree(type_info.scope, *type_info.sh_fields);
+    ParrotScope_push_arrfree(type_info.scope, *type_info.sh_fields);
 
     type_info.sh_tags = malloc(sizeof(type_info.sh_tags));
     ParrotScope_push_free(type_info.scope, type_info.sh_tags);
     *type_info.sh_tags = NULL;
-    ParrotScope_push_shfree(type_info.scope, *type_info.sh_tags);
+    ParrotScope_push_arrfree(type_info.scope, *type_info.sh_tags);
     if (description->tags) {
         for (size_t i = 0; description->tags[i][0]; i++) {
             const char **tag = description->tags[i];
@@ -153,7 +153,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
             char *value = strcpy(calloc(strlen(tag[1]) + 1, sizeof(char)), tag[1]);
             ParrotScope_push_free(type_info.scope, value);
 
-            shput(*type_info.sh_tags, key, value);
+            ParrotArray_puts(*type_info.sh_tags, ((ParrotReflectTag){key, value}));
         }
     }
 
@@ -185,7 +185,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
 
                 size_t size = strtol(ptr, NULL, 0);
                 PARROT_FAIL_COND_MSG(size == 0, "Unexpected dimension with size of 0");
-                arrpush(arr_dimensions, size);
+                ParrotArray_push(arr_dimensions, size);
 
                 dimension_count *= size;
 
@@ -202,20 +202,20 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
                 field_info.basename = strcpy(calloc(strlen(description->name) + 1, sizeof(char)), description->name);
                 ParrotScope_push_free(field_info.scope, field_info.basename);
 
-                if (arrlen(arr_dimensions) > 1) {
-                    size_t key_len = strlen(description->name) + arrlen(arr_dimensions) * 24;
+                if (ParrotArray_size(arr_dimensions) > 1) {
+                    size_t key_len = strlen(description->name) + ParrotArray_size(arr_dimensions) * 24;
                     field_info.key = calloc(key_len, sizeof(char));
                     strcpy(field_info.key, description->name);
 
                     size_t remaining = i;
-                    size_t *indices = calloc(arrlen(arr_dimensions), sizeof(size_t));
+                    size_t *indices = calloc(ParrotArray_size(arr_dimensions), sizeof(size_t));
 
-                    for (size_t j = arrlen(arr_dimensions); j-- > 0;) {
+                    for (size_t j = ParrotArray_size(arr_dimensions); j-- > 0;) {
                         indices[j] = remaining % arr_dimensions[j];
                         remaining /= arr_dimensions[j];
                     }
 
-                    for (size_t j = 0; j < arrlen(arr_dimensions); j++) {
+                    for (size_t j = 0; j < ParrotArray_size(arr_dimensions); j++) {
                         char bracket[24];
                         snprintf(bracket, sizeof(bracket), "[%zu]", indices[j]);
                         strcat(field_info.key, bracket);
@@ -239,7 +239,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
                 field_info.sh_tags = malloc(sizeof(field_info.sh_tags));
                 ParrotScope_push_free(field_info.scope, field_info.sh_tags);
                 *field_info.sh_tags = NULL;
-                ParrotScope_push_shfree(field_info.scope, *field_info.sh_tags);
+                ParrotScope_push_arrfree(field_info.scope, *field_info.sh_tags);
                 if (description->tags) {
                     for (size_t j = 0; description->tags[j][0]; j++) {
                         const char **tag = description->tags[j];
@@ -250,14 +250,14 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
                         char *value = strcpy(calloc(strlen(tag[1]) + 1, sizeof(char)), tag[1]);
                         ParrotScope_push_free(field_info.scope, value);
 
-                        shput(*field_info.sh_tags, key, value);
+                        ParrotArray_put(*field_info.sh_tags, ((ParrotReflectTag){key, value}));
                     }
                 }
 
                 field_info.array_index = i;
-                field_info.array_size = arrlen(arr_dimensions) > 0 ? dimension_count : 0;
+                field_info.array_size = ParrotArray_size(arr_dimensions) > 0 ? dimension_count : 0;
 
-                shputs(*type_info.sh_fields, field_info);
+                ParrotArray_puts(*type_info.sh_fields, field_info);
             }
 
             ParrotScope_delete(scope);
@@ -271,7 +271,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
         description++;
     }
 
-    shputs(self->sh_types, type_info);
+    ParrotArray_puts(self->sh_types, type_info);
 }
 
 static void register_collection(ParrotReflect *self, const ParrotReflectDescription *description) {
@@ -319,7 +319,7 @@ void ParrotReflect_register(ParrotReflect *self, const ParrotReflectDescription 
                                   description->unique_data.alias_data.alias_of_name);
         ParrotScope_push_free(alias_info.scope, alias_info.value);
 
-        shputs(self->sh_aliases, alias_info);
+        ParrotArray_puts(self->sh_aliases, alias_info);
     } break;
     case ParrotReflectEntryType_COLLECTION_HEADER: {
         register_collection(self, description);
@@ -331,19 +331,21 @@ void ParrotReflect_register(ParrotReflect *self, const ParrotReflectDescription 
 }
 
 void ParrotReflect_unregister(ParrotReflect *self, const char *type) {
-    ParrotReflectTypeInfo *type_info = shgetp_null(self->sh_types, type);
+    size_t type_info_index = ParrotArray_find(self->sh_types, type);
+    ParrotReflectTypeInfo *type_info = &self->sh_types[type_info_index];
     if (type_info) {
         ParrotReflectTypeInfo local_type_info = *type_info;
-        shdel(self->sh_types, type);
+        ParrotArray_del(self->sh_types, type_info_index);
 
         ParrotScope_delete(local_type_info.scope);
         return;
     }
 
-    ParrotReflectAliasInfo *alias_info = shgetp_null(self->sh_aliases, type);
+    size_t alias_info_index = ParrotArray_find(self->sh_aliases, type);
+    ParrotReflectAliasInfo *alias_info = &self->sh_aliases[alias_info_index];
     if (alias_info) {
         ParrotReflectAliasInfo local_alias_info = *alias_info;
-        shdel(self->sh_aliases, type);
+        ParrotArray_del(self->sh_aliases, alias_info_index);
 
         ParrotScope_delete(local_alias_info.scope);
         return;
@@ -352,7 +354,7 @@ void ParrotReflect_unregister(ParrotReflect *self, const char *type) {
 
 size_t ParrotReflect_get_type_count(ParrotReflect *self) {
     PARROT_FAIL_NULL(self);
-    return shlen(self->sh_types);
+    return ParrotArray_size(self->sh_types);
 }
 
 char *ParrotReflect_parse_type(const char *type, size_t *out_ptr_level, bool *out_is_const) {
@@ -377,20 +379,21 @@ char *ParrotReflect_parse_type(const char *type, size_t *out_ptr_level, bool *ou
     }
 
     while (*type) {
-        arrpush(arr_type_str, *type++);
+        ParrotArray_push(arr_type_str, *type++);
     }
 
-    while (arr_type_str[arrlen(arr_type_str) - 1] == ' ' || arr_type_str[arrlen(arr_type_str) - 1] == '*') {
-        if (out_ptr_level && arr_type_str[arrlen(arr_type_str) - 1] == '*') {
+    while (arr_type_str[ParrotArray_size(arr_type_str) - 1] == ' ' ||
+           arr_type_str[ParrotArray_size(arr_type_str) - 1] == '*') {
+        if (out_ptr_level && arr_type_str[ParrotArray_size(arr_type_str) - 1] == '*') {
             (*out_ptr_level)++;
         }
-        arrdel(arr_type_str, arrlen(arr_type_str) - 1);
+        ParrotArray_del(arr_type_str, ParrotArray_size(arr_type_str) - 1);
     }
 
-    arrpush(arr_type_str, '\0');
+    ParrotArray_push(arr_type_str, '\0');
 
-    char *ret = strcpy(calloc(arrlen(arr_type_str), sizeof(char)), arr_type_str);
-    arrfree(arr_type_str);
+    char *ret = strcpy(calloc(ParrotArray_size(arr_type_str), sizeof(char)), arr_type_str);
+    ParrotArray_free(arr_type_str);
     return ret;
 }
 
@@ -402,11 +405,11 @@ ptrdiff_t ParrotReflect_resolve_type_ex(
     char *parsed_type = ParrotReflect_parse_type(type, out_ptr_level, out_is_const);
 
     type = parsed_type;
-    while (shgeti(self->sh_aliases, type) >= 0) {
-        type = shget(self->sh_aliases, type);
+    while (ParrotArray_find(self->sh_aliases, type) >= 0) {
+        type = ((ParrotReflectAliasInfo *)ParrotArray_findp(self->sh_aliases, type))->value;
     }
 
-    ptrdiff_t ret = shgeti(self->sh_types, type);
+    ptrdiff_t ret = ParrotArray_find(self->sh_types, type);
     if (out_parsed_type) {
         *out_parsed_type = parsed_type;
     } else {
@@ -417,12 +420,12 @@ ptrdiff_t ParrotReflect_resolve_type_ex(
 
 ptrdiff_t ParrotReflect_resolve_type_by_index(ParrotReflect *self, size_t index) {
     PARROT_FAIL_NULL(self);
-    return shlen(self->sh_types) > index ? (ptrdiff_t)index : -1;
+    return ParrotArray_size(self->sh_types) > index ? (ptrdiff_t)index : -1;
 }
 
 static ParrotReflectTypeInfo *resolve_type_info(ParrotReflect *self, size_t type) {
     PARROT_FAIL_NULL(self);
-    PARROT_RET_COND_V(type >= shlen(self->sh_types), NULL);
+    PARROT_RET_COND_V(type >= ParrotArray_size(self->sh_types), NULL);
 
     return &self->sh_types[type];
 }
@@ -443,34 +446,34 @@ char *ParrotReflect_get_type_tag(ParrotReflect *self, size_t type, const char *k
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
 
-    PARROT_RET_COND_V(shgeti(*type_info->sh_tags, key) <= 0, NULL);
-    char *tag = shget(*type_info->sh_tags, key);
+    PARROT_RET_COND_V(ParrotArray_find(*type_info->sh_tags, key) <= 0, NULL);
+    char *tag = ((ParrotReflectTag *)ParrotArray_findp(*type_info->sh_tags, key))->value;
     return strcpy(calloc(strlen(tag) + 1, sizeof(char)), tag);
 }
 
 ptrdiff_t ParrotReflect_get_type_field(ParrotReflect *self, size_t type, const char *name) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    return shgeti(*type_info->sh_fields, name);
+    return ParrotArray_find(*type_info->sh_fields, name);
 }
 
 size_t ParrotReflect_get_type_field_count(ParrotReflect *self, size_t type) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    return shlen(*type_info->sh_fields);
+    return ParrotArray_size(*type_info->sh_fields);
 }
 
 size_t ParrotReflect_get_type_field_offset(ParrotReflect *self, size_t type, size_t index) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(index >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(index >= ParrotArray_size(*type_info->sh_fields));
     return (*type_info->sh_fields)[index].offset;
 }
 
 char *ParrotReflect_get_type_field_typename(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return strcpy(calloc(strlen(field_info->type) + 1, sizeof(char)), field_info->type);
@@ -479,7 +482,7 @@ char *ParrotReflect_get_type_field_typename(ParrotReflect *self, size_t type, si
 char *ParrotReflect_get_type_field_name(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return strcpy(calloc(strlen(field_info->key) + 1, sizeof(char)), field_info->key);
@@ -488,7 +491,7 @@ char *ParrotReflect_get_type_field_name(ParrotReflect *self, size_t type, size_t
 char *ParrotReflect_get_type_field_basename(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return strcpy(calloc(strlen(field_info->key) + 1, sizeof(char)), field_info->basename);
@@ -497,7 +500,7 @@ char *ParrotReflect_get_type_field_basename(ParrotReflect *self, size_t type, si
 size_t ParrotReflect_get_type_field_size(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return field_info->size;
@@ -506,7 +509,7 @@ size_t ParrotReflect_get_type_field_size(ParrotReflect *self, size_t type, size_
 size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return field_info->array_index;
@@ -515,7 +518,7 @@ size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type
 size_t ParrotReflect_get_type_field_array_size(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
 
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
     return field_info->array_size;
@@ -525,11 +528,11 @@ char *ParrotReflect_get_type_field_tag(ParrotReflect *self, size_t type, size_t 
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
 
-    PARROT_FAIL_COND(field >= shlen(*type_info->sh_fields));
+    PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
 
-    PARROT_RET_COND_V(shgeti(*field_info->sh_tags, key) <= 0, NULL);
-    char *tag = shget(*field_info->sh_tags, key);
+    PARROT_RET_COND_V(ParrotArray_find(*field_info->sh_tags, key) <= 0, NULL);
+    char *tag = ((ParrotReflectTag *)ParrotArray_findp(*field_info->sh_tags, key))->value;
     return strcpy(calloc(strlen(tag) + 1, sizeof(char)), tag);
 }
 

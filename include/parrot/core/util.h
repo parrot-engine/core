@@ -11,9 +11,11 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 
 #ifdef __cplusplus
 #define PARROT_CPP(...) __VA_ARGS__
+#define PARROT_C_CPP(c, cpp) cpp
 #define PARROT_C(...)
 #else
 #define PARROT_CPP(...)
+#define PARROT_C_CPP(c, cpp) c
 #define PARROT_C(...) __VA_ARGS__
 #endif
 

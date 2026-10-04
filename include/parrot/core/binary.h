@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "parrot/core/util.h"
-#include "parrot/core/scope.h"
 #include "parrot/core/reflect.h"
+#include "parrot/core/scope.h"
+#include "parrot/core/util.h"
 
 typedef bool (*ParrotBufferRead)(ParrotScope *scope, size_t offset, uint8_t *out);
 typedef void (*ParrotBufferWrite)(ParrotScope *scope, uint8_t data);
@@ -30,7 +30,7 @@ PARROT_API ParrotBuffer *ParrotBuffer_new_bytearray(/* Auto-deleted at end if no
                                                     size_t size,
                                                     /* NULL = no write */ ParrotBufferWrite write);
 #define ParrotBuffer_new_stbds_array(p_arr_data) ParrotBuffer_new_stbds_array_raw(&(p_arr_data));
-ParrotBuffer *ParrotBuffer_new_stbds_array_raw(uint8_t **p_arr_data);
+ParrotBuffer *ParrotBuffer_new_array_raw(uint8_t **p_arr_data);
 PARROT_API void ParrotBuffer_delete(ParrotBuffer *self);
 PARROT_API void ParrotBuffer_vdelete(void *self);
 

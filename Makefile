@@ -32,7 +32,7 @@ $(OUTPUT): $(OBJS)
 test: $(TEST)
 	exec $(TEST)
 
-$(TEST): $(OUTPUT)
+$(TEST): test.c $(OUTPUT)
 	$(CC) $(CFLAGS) $(EXTRA_FLAGS) -o $@ test.c $(OUTPUT) -lm
 
 $(BUILD_DIR)/%.o: %

@@ -1,5 +1,5 @@
 #include "parrot/core/scope.h"
-#include "parrot/core/stb_ds.h"
+#include "parrot/core/array.h"
 
 typedef struct {
     uint32_t key;
@@ -33,15 +33,14 @@ void ParrotScope_delete(ParrotScope *self) {
         ParrotScope_cancel(self->parent, self->parent_delete_id);
     }
 
-    while (hmlen(self->hm_stack) > 0) {
-        size_t index = hmlen(self->hm_stack) - 1;
+    while (ParrotArray_size(self->hm_stack) > 0) {
+        size_t index = ParrotArray_size(self->hm_stack) - 1;
         ParrotScopeEntry entry = self->hm_stack[index];
-        hmdel(self->hm_stack, entry.key);
-
+        ParrotArray_del(self->hm_stack, index);
         entry.func(entry.ctx);
     }
 
-    hmfree(self->hm_stack);
+    ParrotArray_free(self->hm_stack);
     free(self);
 }
 
@@ -95,7 +94,7 @@ uint32_t ParrotScope_push(ParrotScope *self, void (*func)(void *ctx), void *ctx)
     entry.func = func;
     entry.ctx = ctx;
 
-    hmputs(self->hm_stack, entry);
+    ParrotArray_put(self->hm_stack, entry);
     return entry.key;
 }
 
@@ -109,45 +108,29 @@ uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr) {
 
 typedef struct {
     void **data;
-    size_t element_size;
 } STBDSFreeCtx;
 
 static void arrfree_wrapper(void *ctx_ptr) {
     STBDSFreeCtx *ctx = ctx_ptr;
     if (*ctx->data) {
-        stbds_arrfreef(*ctx->data);
+        ParrotArray_free(*ctx->data);
         *ctx->data = NULL;
     }
 }
 
-void ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr, size_t element_size) {
+void ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr) {
     ParrotScope *scope = ParrotScope_new(self);
     STBDSFreeCtx *ctx = ParrotScope_alloc_ctx(scope, STBDSFreeCtx);
     ctx->data = arr;
-    ctx->element_size = element_size;
 
     ParrotScope_push(scope, arrfree_wrapper, ctx);
-}
-
-static void hmfree_wrapper(void *ctx_ptr) {
-    STBDSFreeCtx *ctx = ctx_ptr;
-    if (*ctx->data) {
-        stbds_hmfree_func(((uint8_t *)*ctx->data) - ctx->element_size, ctx->element_size);
-        *ctx->data = NULL;
-    }
-}
-
-void ParrotScope_push_hmfree_raw(ParrotScope *self, void **hm, size_t element_size) {
-    ParrotScope *scope = ParrotScope_new(self);
-    STBDSFreeCtx *ctx = ParrotScope_alloc_ctx(scope, STBDSFreeCtx);
-    ctx->data = hm;
-    ctx->element_size = element_size;
-
-    ParrotScope_push(scope, hmfree_wrapper, ctx);
 }
 
 void ParrotScope_cancel(ParrotScope *self, uint32_t id) {
     PARROT_FAIL_NULL(self);
 
-    hmdel(self->hm_stack, id);
+    ptrdiff_t index = ParrotArray_find(self->hm_stack, id);
+    if (index >= 0) {
+        ParrotArray_del(self->hm_stack, index);
+    }
 }

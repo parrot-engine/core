@@ -1,6 +1,6 @@
 #include "parrot/core/serialize.h"
+#include "parrot/core/array.h"
 #include "parrot/core/math.h"
-#include "parrot/core/stb_ds.h"
 
 typedef uint16_t ObjectEntryType;
 #define ObjectEntryType_OBJECT (0x00)
@@ -62,16 +62,19 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
         .ptr = (uintptr_t)data,
         .type = type,
     };
-    if (hmgeti(hm_ptr_map, entry_key) >= 0) {
+
+    ptrdiff_t index = ParrotArray_find(hm_ptr_map, entry_key);
+
+    if (index >= 0) {
         ParrotScope_delete(work_scope);
-        return hmgeti(hm_ptr_map, entry_key);
+        return index;
     }
 
     char *typename = ParrotReflect_get_type_name(reflect, type);
     ParrotScope_push_free(work_scope, typename);
 
-    uint32_t entry_index = arrlen(arr_objects);
-    arrpush(arr_objects, (ObjectEntry){0});
+    uint32_t entry_index = ParrotArray_size(arr_objects);
+    ParrotArray_push(arr_objects, (ObjectEntry){0});
 
     ObjectEntry entry = {0};
     entry.scope = ParrotScope_new(scope);
@@ -90,40 +93,40 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
             entry.type = (signed_) ? ObjectEntryType_SINT : ObjectEntryType_UINT;                                       \
             switch (sizeof(type_)) {                                                                                    \
             case 1:                                                                                                     \
-                arrpush(*entry.p_arr_data,                                                                              \
-                        (signed_) ? ((ObjectEntryData){                                                                 \
-                                        .sint = ((int8_t *)data)[i],                                                    \
-                                    }) :                                                                                \
-                                    ((ObjectEntryData){                                                                 \
-                                        .uint = ((uint8_t *)data)[i],                                                   \
-                                    }));                                                                                \
+                ParrotArray_push(*entry.p_arr_data,                                                                     \
+                                 (signed_) ? ((ObjectEntryData){                                                        \
+                                                 .sint = ((int8_t *)data)[i],                                           \
+                                             }) :                                                                       \
+                                             ((ObjectEntryData){                                                        \
+                                                 .uint = ((uint8_t *)data)[i],                                          \
+                                             }));                                                                       \
                 break;                                                                                                  \
             case 2:                                                                                                     \
-                arrpush(*entry.p_arr_data,                                                                              \
-                        (signed_) ? ((ObjectEntryData){                                                                 \
-                                        .sint = ((int16_t *)data)[i],                                                   \
-                                    }) :                                                                                \
-                                    ((ObjectEntryData){                                                                 \
-                                        .uint = ((uint16_t *)data)[i],                                                  \
-                                    }));                                                                                \
+                ParrotArray_push(*entry.p_arr_data,                                                                     \
+                                 (signed_) ? ((ObjectEntryData){                                                        \
+                                                 .sint = ((int16_t *)data)[i],                                          \
+                                             }) :                                                                       \
+                                             ((ObjectEntryData){                                                        \
+                                                 .uint = ((uint16_t *)data)[i],                                         \
+                                             }));                                                                       \
                 break;                                                                                                  \
             case 4:                                                                                                     \
-                arrpush(*entry.p_arr_data,                                                                              \
-                        (signed_) ? ((ObjectEntryData){                                                                 \
-                                        .sint = ((int32_t *)data)[i],                                                   \
-                                    }) :                                                                                \
-                                    ((ObjectEntryData){                                                                 \
-                                        .uint = ((uint32_t *)data)[i],                                                  \
-                                    }));                                                                                \
+                ParrotArray_push(*entry.p_arr_data,                                                                     \
+                                 (signed_) ? ((ObjectEntryData){                                                        \
+                                                 .sint = ((int32_t *)data)[i],                                          \
+                                             }) :                                                                       \
+                                             ((ObjectEntryData){                                                        \
+                                                 .uint = ((uint32_t *)data)[i],                                         \
+                                             }));                                                                       \
                 break;                                                                                                  \
             case 8:                                                                                                     \
-                arrpush(*entry.p_arr_data,                                                                              \
-                        (signed_) ? ((ObjectEntryData){                                                                 \
-                                        .sint = ((int64_t *)data)[i],                                                   \
-                                    }) :                                                                                \
-                                    ((ObjectEntryData){                                                                 \
-                                        .uint = ((uint64_t *)data)[i],                                                  \
-                                    }));                                                                                \
+                ParrotArray_push(*entry.p_arr_data,                                                                     \
+                                 (signed_) ? ((ObjectEntryData){                                                        \
+                                                 .sint = ((int64_t *)data)[i],                                          \
+                                             }) :                                                                       \
+                                             ((ObjectEntryData){                                                        \
+                                                 .uint = ((uint64_t *)data)[i],                                         \
+                                             }));                                                                       \
                 break;                                                                                                  \
             default:                                                                                                    \
                 break;                                                                                                  \
@@ -161,29 +164,29 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
             primitive = true;
             entry.type = ObjectEntryType_ASCII;
             for (size_t i = 0; i < count; i++) {
-                arrpush(*entry.p_arr_data,
-                        ((ObjectEntryData){
-                            .ascii = ((char *)data)[i],
-                        }));
+                ParrotArray_push(*entry.p_arr_data,
+                                 ((ObjectEntryData){
+                                     .ascii = ((char *)data)[i],
+                                 }));
             }
         }
 
         if (strcmp(typename, "float") == 0) {
             primitive = true;
             entry.type = ObjectEntryType_NUMBER;
-            arrpush(*entry.p_arr_data,
-                    ((ObjectEntryData){
-                        .number = ((float *)data)[i],
-                    }));
+            ParrotArray_push(*entry.p_arr_data,
+                             ((ObjectEntryData){
+                                 .number = ((float *)data)[i],
+                             }));
         }
 
         if (strcmp(typename, "double") == 0) {
             primitive = true;
             entry.type = ObjectEntryType_NUMBER;
-            arrpush(*entry.p_arr_data,
-                    ((ObjectEntryData){
-                        .number = ((double *)data)[i],
-                    }));
+            ParrotArray_push(*entry.p_arr_data,
+                             ((ObjectEntryData){
+                                 .number = ((double *)data)[i],
+                             }));
         }
 
         if (primitive) {
@@ -246,21 +249,25 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
             field.index =
                 queue_object(p_arr_objects, p_hm_ptr_map, scope, reflect, field_type, field_data, count, with_ptrs);
 
-            arrpush(*object.p_arr_fields, field);
+            ParrotArray_push(*object.p_arr_fields, field);
             j += count - 1;
         }
 
-        arrpush(*entry.p_arr_data,
-                ((ObjectEntryData){
-                    .object = object,
-                }));
+        ParrotArray_push(*entry.p_arr_data,
+                         ((ObjectEntryData){
+                             .object = object,
+                         }));
     }
 
     arr_objects[entry_index] = entry;
-    hmput(hm_ptr_map, entry_key, arrlen(arr_objects) - 1);
+    ParrotArray_put(hm_ptr_map,
+                    ((ObjectPtrMap){
+                        .key = entry_key,
+                        .value = ParrotArray_size(arr_objects) - 1,
+                    }));
 
     ParrotScope_delete(work_scope);
-    return arrlen(arr_objects) - 1;
+    return ParrotArray_size(arr_objects) - 1;
 #undef hm_ptr_map
 #undef arr_objects
 }
@@ -275,7 +282,7 @@ static void generate_object_queue(ObjectEntry **p_arr_objects,
 
     queue_object(p_arr_objects, &hm_ptr_map, scope, reflect, type, data, 1, with_ptrs);
 
-    hmfree(hm_ptr_map);
+    ParrotArray_free(hm_ptr_map);
 }
 
 void Parrot_serialize_bytes(
@@ -289,21 +296,21 @@ void Parrot_serialize_bytes(
     ParrotScope_push_arrfree(scope, arr_objects);
     generate_object_queue(&arr_objects, scope, reflect, type, data_ptr, with_ptrs);
 
-    uint32_t object_count = arrlen(arr_objects);
+    uint32_t object_count = ParrotArray_size(arr_objects);
     ParrotBuffer_write32(output, ParrotBufferEndian_BIG, object_count);
 
-    for (size_t i = 0; i < arrlen(arr_objects); i++) {
+    for (size_t i = 0; i < ParrotArray_size(arr_objects); i++) {
         ParrotBuffer_write16(output, ParrotBufferEndian_BIG, arr_objects[i].type);
-        ParrotBuffer_write32(output, ParrotBufferEndian_BIG, arrlen(*arr_objects[i].p_arr_data));
+        ParrotBuffer_write32(output, ParrotBufferEndian_BIG, ParrotArray_size(*arr_objects[i].p_arr_data));
 
-        for (size_t j = 0; j < arrlen(*arr_objects[i].p_arr_data); j++) {
+        for (size_t j = 0; j < ParrotArray_size(*arr_objects[i].p_arr_data); j++) {
             switch (arr_objects[i].type) {
             case ObjectEntryType_OBJECT: {
                 char *typename = ParrotReflect_get_type_name(reflect, (*arr_objects[i].p_arr_data)[j].object.type);
                 ParrotScope_push_free(scope, typename);
                 ParrotBuffer_write_ascii(output, typename);
 
-                size_t field_count = arrlen(*(*arr_objects[i].p_arr_data)[j].object.p_arr_fields);
+                size_t field_count = ParrotArray_size(*(*arr_objects[i].p_arr_data)[j].object.p_arr_fields);
                 ParrotBuffer_write32(output, ParrotBufferEndian_BIG, field_count);
 
                 for (size_t k = 0; k < field_count; k++) {
@@ -425,7 +432,7 @@ static void deserialize_object(
             deserialize_object(state, relocation.src_object, field_type, reflect, count, with_ptrs);
 
             ParrotReflect_get_type_field_size(reflect, type, field);
-            arrpush(state->arr_relocations, relocation);
+            ParrotArray_push(state->arr_relocations, relocation);
 
             ParrotScope_delete(field_scope);
         }
@@ -526,7 +533,7 @@ deserialize(ObjectEntry *objects, size_t object_count, ParrotReflect *reflect, s
 
         object.object = &objects[i];
 
-        arrpush(state.arr_objects, object);
+        ParrotArray_push(state.arr_objects, object);
     }
 
     deserialize_object(&state, 0, *out_type, reflect, 1, with_ptrs);
@@ -627,19 +634,17 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
     ObjectEntry *arr_objects = NULL;
     ParrotScope_push_arrfree(scope, arr_objects);
 
-#define FAIL()                                                                                                          \
-    do {                                                                                                                \
-        ParrotScope_delete(scope);                                                                                      \
-        return NULL;                                                                                                    \
-        \                                                                                                               \
-    } while (0)
-#define CHECK_FAIL(expr)                                                                                                \
-    do {                                                                                                                \
-        if (!(expr)) {                                                                                                  \
-            FAIL();                                                                                                     \
-        }                                                                                                               \
-        \                                                                                                               \
-    } while (0)
+#define FAIL() \
+    do { \
+        ParrotScope_delete(scope); \
+        return NULL; \
+        \ \ } while (0)
+#define CHECK_FAIL(expr) \
+    do { \
+        if (!(expr)) { \
+            FAIL(); \
+        } \
+        \ \ } while (0)
 
     uint32_t object_count = 0;
     CHECK_FAIL(ParrotBuffer_read32(input, ParrotBufferEndian_BIG, &object_count));
@@ -659,7 +664,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                 uint8_t ascii = 0;
                 CHECK_FAIL(ParrotBuffer_read8(input, &ascii));
 
-                arrpush(arr_object_type, Parrot_ascii_to_char(ascii));
+                ParrotArray_push(arr_object_type, Parrot_ascii_to_char(ascii));
 
                 if (ascii == 0) {
                     break;
@@ -688,7 +693,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                     uint8_t ascii = 0;
                     CHECK_FAIL(ParrotBuffer_read8(input, &ascii));
 
-                    arrpush(arr_field_name, Parrot_ascii_to_char(ascii));
+                    ParrotArray_push(arr_field_name, Parrot_ascii_to_char(ascii));
 
                     if (ascii == 0) {
                         break;
@@ -706,7 +711,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
 
                 field_entry.index = index;
 
-                arrpush(*entry.data.object.p_arr_fields, field_entry);
+                ParrotArray_push(*entry.data.object.p_arr_fields, field_entry);
 
                 ParrotScope_delete(field_scope);
             }
@@ -725,7 +730,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                 int64_t number = 0;
                 CHECK_FAIL(ParrotBuffer_read64s(input, ParrotBufferEndian_BIG, &number));
 
-                arrpush(*entry.data.p_arr_sint, number);
+                ParrotArray_push(*entry.data.p_arr_sint, number);
             }
         } break;
 
@@ -742,7 +747,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                 uint64_t number = 0;
                 ParrotBuffer_read64(input, ParrotBufferEndian_BIG, &number);
 
-                arrpush(*entry.data.p_arr_uint, number);
+                ParrotArray_push(*entry.data.p_arr_uint, number);
             }
         } break;
         case ObjectEntryType_ASCII: {
@@ -758,7 +763,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                 uint8_t ascii = 0;
                 CHECK_FAIL(ParrotBuffer_read8(input, &ascii));
 
-                arrpush(*entry.data.p_arr_ascii, Parrot_ascii_to_char(ascii));
+                ParrotArray_push(*entry.data.p_arr_ascii, Parrot_ascii_to_char(ascii));
             }
         } break;
         case ObjectEntryType_NUMBER: {
@@ -774,7 +779,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
                 ParrotFixed64i number = 0;
                 CHECK_FAIL(ParrotBuffer_read64s(input, ParrotBufferEndian_BIG, &number));
 
-                arrpush(*entry.data.p_arr_number, ParrotFixed64i_to_double(number));
+                ParrotArray_push(*entry.data.p_arr_number, ParrotFixed64i_to_double(number));
             }
         } break;
         default:
@@ -785,7 +790,7 @@ void *Parrot_deserialize_bytes(ParrotBuffer *input, ParrotReflect *reflect, size
         ParrotScope_set_parent(entry.scope, scope);
         ParrotScope_delete(object_scope);
 
-        arrpush(arr_objects, entry);
+        ParrotArray_push(arr_objects, entry);
     }
 
 #undef CHECK_FAIL

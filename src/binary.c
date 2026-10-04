@@ -1,5 +1,5 @@
 #include "parrot/core/binary.h"
-#include "parrot/core/stb_ds.h"
+#include "parrot/core/array.h"
 
 struct ParrotBuffer {
     ParrotBufferRead read;
@@ -95,7 +95,7 @@ ParrotBuffer_new_bytearray(ParrotScope *write_scope, const void **p_data, size_t
 static bool stbds_array_read(ParrotScope *scope, size_t position, uint8_t *out) {
     uint8_t **p_arr_data = ParrotScope_get_ctx(scope, uint8_t **);
 
-    if (position >= arrlen(*p_arr_data)) {
+    if (position >= ParrotArray_size(*p_arr_data)) {
         return false;
     }
 
@@ -105,10 +105,10 @@ static bool stbds_array_read(ParrotScope *scope, size_t position, uint8_t *out) 
 
 static void stbds_array_write(ParrotScope *scope, uint8_t byte) {
     uint8_t **p_arr_data = ParrotScope_get_ctx(scope, uint8_t **);
-    arrpush(*p_arr_data, byte);
+    ParrotArray_push(*p_arr_data, byte);
 }
 
-ParrotBuffer *ParrotBuffer_new_stbds_array_raw(uint8_t **p_arr_data) {
+ParrotBuffer *ParrotBuffer_new_array_raw(uint8_t **p_arr_data) {
     ParrotScope *scope = ParrotScope_new(NULL);
     ParrotScope_set_ctx(scope, p_arr_data);
     return ParrotBuffer_new(scope, stbds_array_read, stbds_array_write);
