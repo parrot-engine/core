@@ -30,7 +30,7 @@
         size_t _idx = ParrotArray_alloc(arr, 1);                                                                        \
         (arr)[_idx] = (value);                                                                                          \
     } while (0)
-#define ParrotArray_deln(arr, index, count) ParrotArray_delx(arr, index, count)
+#define ParrotArray_deln(arr, index, count) ((arr) ? ParrotArray_delx(arr, index, count) : (void)0)
 #define ParrotArray_del(arr, index) ParrotArray_deln(arr, index, 1)
 
 #define ParrotArray_put_key(arr, value, key, key_size)                                                                  \
