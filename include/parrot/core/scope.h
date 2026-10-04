@@ -18,15 +18,28 @@ PARROT_API void *ParrotScope_alloc_ctx_raw(ParrotScope *self, size_t size);
 #define ParrotScope_get_ctx(self, type) ((type)ParrotScope_get_ctx_raw(self))
 PARROT_API void *ParrotScope_get_ctx_raw(ParrotScope *self);
 
+#define ParrotScope_alloc_ptr_arrfree(p_self, p_arr)                                                                    \
+    do {                                                                                                                \
+        p_arr = malloc(sizeof(void *));                                                                                 \
+        ParrotScope_push_free(p_self, p_arr);                                                                           \
+        *(p_arr) = NULL;                                                                                                \
+                                                                                                                        \
+        ParrotScope_push_arrfree(p_self, *(p_arr));                                                                     \
+    } while (0)
+
 PARROT_API void ParrotScope_set_parent(ParrotScope *self, /* NULL = no parent */ ParrotScope *parent);
 
 PARROT_API uint32_t ParrotScope_push(ParrotScope *self, void (*func)(void *ctx), void *ctx);
+PARROT_API uint32_t ParrotScope_push_with_free(ParrotScope *self,
+                                               void (*func)(void *ctx),
+                                               /* NULL = uncalled */ void (*free_func)(void *ctx),
+                                               void *ctx);
 
 /// Pushes a free(ptr) function
 PARROT_API uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr);
 
 #define ParrotScope_push_arrfree(p_self, p_arr) ParrotScope_push_arrfree_raw(p_self, (void **)&(p_arr))
-void ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr);
+uint32_t ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr);
 
 /// Does not call pushed function. Does nothing on non-existant id
 PARROT_API void ParrotScope_cancel(ParrotScope *self, uint32_t id);

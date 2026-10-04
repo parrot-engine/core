@@ -5,6 +5,7 @@ typedef struct {
     uint32_t key;
 
     void (*func)(void *ctx);
+    void (*free_func)(void *ctx);
     void *ctx;
 } ParrotScopeEntry;
 
@@ -37,7 +38,12 @@ void ParrotScope_delete(ParrotScope *self) {
         size_t index = ParrotArray_size(self->hm_stack) - 1;
         ParrotScopeEntry entry = self->hm_stack[index];
         ParrotArray_del(self->hm_stack, index);
+
         entry.func(entry.ctx);
+
+        if (entry.free_func) {
+            entry.free_func(entry.ctx);
+        }
     }
 
     ParrotArray_free(self->hm_stack);
@@ -87,11 +93,17 @@ void ParrotScope_set_parent(ParrotScope *self, ParrotScope *parent) {
 }
 
 uint32_t ParrotScope_push(ParrotScope *self, void (*func)(void *ctx), void *ctx) {
+    return ParrotScope_push_with_free(self, func, NULL, ctx);
+}
+
+uint32_t
+ParrotScope_push_with_free(ParrotScope *self, void (*func)(void *ctx), void (*free_func)(void *ctx), void *ctx) {
     PARROT_FAIL_NULL(self);
 
     ParrotScopeEntry entry = {0};
     entry.key = self->next_id++;
     entry.func = func;
+    entry.free_func = free_func;
     entry.ctx = ctx;
 
     ParrotArray_put(self->hm_stack, entry);
@@ -118,12 +130,10 @@ static void arrfree_wrapper(void *ctx_ptr) {
     }
 }
 
-void ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr) {
-    ParrotScope *scope = ParrotScope_new(self);
-    STBDSFreeCtx *ctx = ParrotScope_alloc_ctx(scope, STBDSFreeCtx);
+uint32_t ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr) {
+    STBDSFreeCtx *ctx = PARROT_ALLOC(STBDSFreeCtx);
     ctx->data = arr;
-
-    ParrotScope_push(scope, arrfree_wrapper, ctx);
+    return ParrotScope_push_with_free(self, arrfree_wrapper, free, ctx);
 }
 
 void ParrotScope_cancel(ParrotScope *self, uint32_t id) {
@@ -131,6 +141,11 @@ void ParrotScope_cancel(ParrotScope *self, uint32_t id) {
 
     ptrdiff_t index = ParrotArray_find(self->hm_stack, id);
     if (index >= 0) {
+        ParrotScopeEntry *entry = &self->hm_stack[index];
+        if (entry->free_func) {
+            entry->free_func(entry->ctx);
+        }
+
         ParrotArray_del(self->hm_stack, index);
     }
 }
