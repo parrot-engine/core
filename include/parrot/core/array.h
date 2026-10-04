@@ -7,7 +7,7 @@
 
 #define ParrotArray_init_capacity(arr, capacity) ((arr) = ParrotArray_initx(sizeof(*(arr)), capacity))
 #define ParrotArray_init(arr) ((arr) = ParrotArray_initx(sizeof(*(arr)), 16))
-#define ParrotArray_free(arr) (ParrotArray_freex(arr), (arr) = PARROT_C_CPP((void *)0, nullptr))
+#define ParrotArray_free(arr) ((arr) ? ParrotArray_freex(arr) : (void)0, (arr) = PARROT_C_CPP((void *)0, nullptr))
 
 #define ParrotArray_force_init(arr) (!(arr) ? ParrotArray_initx(sizeof(*(arr)), 16) : (arr))
 
