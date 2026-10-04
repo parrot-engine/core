@@ -267,3 +267,9 @@ void *ParrotArray_findpx(void *arr, const void *key, size_t key_size) {
     PARROT_RET_COND_V(index < 0, NULL);
     return (uint8_t *)arr + ARRAY_METADATA(arr)->element_size * index;
 }
+
+void ParrotArray_delkx(void *arr, const void *key, size_t key_size) {
+    ptrdiff_t index = ParrotArray_findx(arr, key, key_size);
+    PARROT_RET_COND(index < 0);
+    ParrotArray_delx(arr, index, 1);
+}

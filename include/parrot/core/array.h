@@ -55,6 +55,8 @@
 #define ParrotArray_findp(arr, key) ((arr) ? ParrotArray_findpx(arr, &(key), sizeof(key)) : NULL)
 /// Returns NULL if not found
 #define ParrotArray_findsp(arr, key) ((arr) ? ParrotArray_findpx(arr, key, strlen(key)) : NULL)
+#define ParrotArray_delk(arr, key) ((arr) ? ParrotArray_delkx(arr, &(key), sizeof(key)) : (void)0)
+#define ParrotArray_delks(arr, key) ((arr) ? ParrotArray_delkx(arr, key, strlen(key)) : (void)0)
 
 PARROT_API void *ParrotArray_initx(size_t element_size, size_t initial_capacity);
 PARROT_API void ParrotArray_freex(void *arr);
@@ -72,5 +74,6 @@ PARROT_API void ParrotArray_mapx(void *arr, size_t index, const void *key, size_
 PARROT_API ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size);
 /// Returns NULL if not found
 PARROT_API void *ParrotArray_findpx(void *arr, const void *key, size_t key_size);
+PARROT_API void ParrotArray_delkx(void *arr, const void *key, size_t key_size);
 
 #endif // PARROT_CORE_INCLUDE_PARROT_CORE_CONTAINERS_H_
