@@ -32,8 +32,8 @@ $(OUTPUT): $(OBJS)
 test: $(TEST)
 	exec $(TEST)
 
-$(TEST): test.c $(OUTPUT)
-	$(CC) $(CFLAGS) $(EXTRA_FLAGS) -o $@ test.c $(OUTPUT) -lm
+$(TEST): $(OUTPUT) test.c
+	$(CC) $(CFLAGS) -o $@ test.c $(OUTPUT) -lm
 
 $(BUILD_DIR)/%.o: %
 	mkdir -p $(dir $@)

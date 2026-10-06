@@ -24,6 +24,19 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 #define PARROT_STRING(x) #x
 #define PARROT_TYPE_STRING(type) ((void)sizeof(*(type *)NULL), #type)
 
+#define PARROT_API PARROT_CPP(extern "C")
+
+#define PARROT_ALLOC(type_) (type_ *)memset(malloc(sizeof(type_)), 0, sizeof(type_))
+
+#define PARROT_ALIGN_UP(n, align) (((n) + (align) - 1) & ~((align) - 1))
+#define PARROT_ALIGN_DOWN(n, align) ((n) & ~((align) - 1))
+
+#define PARROT_ARRAY_LEN(arr) (sizeof(arr) / sizeof(*(arr)))
+
+#define PARROT_META_SIZE(type, user_size) (PARROT_ALIGN_UP(sizeof(type), 16) + (user_size))
+#define PARROT_META(type, data) ((type *)((uint8_t *)(data) - PARROT_META_SIZE(type, 0)))
+#define PARROT_META_USER(type, meta) ((void *)((uint8_t *)(meta) + PARROT_META_SIZE(type, 0)))
+
 #define PARROT_FAIL_FMT(fmt, ...)                                                                                       \
     do {                                                                                                                \
         Parrot_crash_handler("(%s:%d in \"%s\") ERROR: " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);        \
@@ -51,14 +64,5 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
     } while (0)
 
 #define PARROT_RET_COND(cond) PARROT_RET_COND_V(cond, )
-
-#define PARROT_ALIGN_UP(n, align) (((n) + (align) - 1) & ~((align) - 1))
-#define PARROT_ALIGN_DOWN(n, align) ((n) & ~((align) - 1))
-
-#define PARROT_ARRAY_LEN(arr) (sizeof(arr) / sizeof(*(arr)))
-
-#define PARROT_ALLOC(type_) (type_ *)memset(malloc(sizeof(type_)), 0, sizeof(type_))
-
-#define PARROT_API PARROT_CPP(extern "C")
 
 #endif // PARROT_CORE_UTIL_H_

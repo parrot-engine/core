@@ -35,11 +35,10 @@ uint64_t Parrot_os_get_performance_frequency(void) {
 
 void Parrot_os_sleep(double seconds) {
 #ifdef __unix__
-    if (seconds == 0) {
+    if (seconds < 0) {
         if (sched_yield() < 0) {
             // My guess on how it would fail other than unimplemented is unknown
-            perror("(?\?\?) sched_yield");
-
+            perror("(?) sched_yield");
             sleep(0);
         }
         return;
@@ -51,4 +50,15 @@ void Parrot_os_sleep(double seconds) {
     };
     nanosleep(&time, NULL);
 #endif
+}
+
+void Parrot_os_sleep_precise(double seconds) {
+    uint64_t begin = Parrot_os_get_performance_counter();
+    uint64_t frequency = Parrot_os_get_performance_frequency();
+
+    Parrot_os_sleep(seconds - 0.002);
+
+    while (Parrot_os_get_performance_counter() - begin < frequency * seconds) {
+        Parrot_os_yield();
+    }
 }
