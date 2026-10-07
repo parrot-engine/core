@@ -1,6 +1,7 @@
 #ifndef PARROT_CORE_UTIL_H_
 #define PARROT_CORE_UTIL_H_
 
+#include <stdint.h> // IWYU pragma: keep
 #include <stdlib.h> // IWYU pragma: keep
 #include <string.h> // IWYU pragma: keep
 
@@ -38,9 +39,7 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 #define PARROT_META_USER(type, meta) ((void *)((uint8_t *)(meta) + PARROT_META_SIZE(type, 0)))
 
 #define PARROT_FAIL_FMT(fmt, ...)                                                                                       \
-    do {                                                                                                                \
-        Parrot_crash_handler("(%s:%d in \"%s\") ERROR: " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);        \
-    } while (0)
+    Parrot_crash_handler("(%s:%d in \"%s\") ERROR: " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #define PARROT_FAIL_MSG(msg) PARROT_FAIL_FMT("%s", msg)
 
 #define PARROT_FAIL_COND_FMT(cond, fmt, ...)                                                                            \
@@ -64,5 +63,7 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
     } while (0)
 
 #define PARROT_RET_COND(cond) PARROT_RET_COND_V(cond, )
+
+#define PARROT_UNREACHABLE() PARROT_FAIL_MSG("Unreachable")
 
 #endif // PARROT_CORE_UTIL_H_

@@ -14,9 +14,8 @@ typedef struct {
     int priority;
 
     uint64_t running_counter;
-    double average_duration;
 
-    uint64_t last_run;
+    double total_duration;
 } ParrotSchedulerTaskMeta;
 
 struct ParrotScheduler {
@@ -93,10 +92,8 @@ void ParrotScheduler_begin_task(void *task) {
 void ParrotScheduler_end_task(void *task) {
     PARROT_FAIL_NULL(task);
 
-    ParrotScheduler_end_task_manual(task,
-                                    Parrot_os_get_performance_counter() -
-                                        PARROT_META(ParrotSchedulerTaskMeta, task)->running_counter,
-                                    Parrot_os_get_performance_frequency());
+    uint64_t time = Parrot_os_get_performance_counter() - PARROT_META(ParrotSchedulerTaskMeta, task)->running_counter;
+    ParrotScheduler_end_task_manual(task, time, Parrot_os_get_performance_frequency());
 }
 
 void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t frequency) {
@@ -111,8 +108,7 @@ void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t fre
 
     PARROT_RET_COND(meta->running_counter == UINT64_MAX);
 
-    const float NEW_WEIGHT = 0.25;
-    meta->average_duration = (meta->average_duration * (1.0 - NEW_WEIGHT)) + ((double)duration / frequency * NEW_WEIGHT);
+    meta->total_duration += (double)duration / frequency;
 
     meta->running_counter = UINT64_MAX;
 }
@@ -120,24 +116,13 @@ void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t fre
 void *ParrotScheduler_nextx(ParrotScheduler *self) {
     PARROT_FAIL_NULL(self);
 
-    for (size_t i = 0; i < ParrotArray_size(self->arr_tasks); i++) {
-        if (self->arr_tasks[i]->running_counter != UINT64_MAX) {
-            continue;
-        }
-
-        if (self->arr_tasks[i]->priority < 0) {
-            continue;
-        }
-
-        self->arr_tasks[i]->last_run++;
-    }
-
     ParrotSchedulerTaskMeta *best = NULL;
-    float best_score = -INFINITY;
+    int64_t best_score = INT64_MIN;
 
-    const float PRIORITY_WEIGHT = 750.0;
-    const float AGING_WEIGHT = 250.0;
-    const float DURATION_PENALTY = 10000.0 * 500.0;
+    const int64_t MULTIPLIER = 1000;
+
+    const int64_t PRIORITY_WEIGHT = 7500;
+    const int64_t DURATION_PENALTY = 10;
 
     for (size_t i = 0; i < ParrotArray_size(self->arr_tasks); i++) {
         ParrotSchedulerTaskMeta *task = self->arr_tasks[i];
@@ -150,8 +135,9 @@ void *ParrotScheduler_nextx(ParrotScheduler *self) {
             continue;
         }
 
-        float score = (task->priority * PRIORITY_WEIGHT) + (task->last_run * AGING_WEIGHT) -
-                      (task->average_duration * DURATION_PENALTY);
+        int64_t score = 0;
+        score += task->priority * PRIORITY_WEIGHT * MULTIPLIER;
+        score -= task->total_duration * DURATION_PENALTY * MULTIPLIER;
 
         if (score > best_score) {
             best_score = score;
@@ -160,7 +146,6 @@ void *ParrotScheduler_nextx(ParrotScheduler *self) {
     }
 
     if (best) {
-        best->last_run = 0;
         return PARROT_META_USER(ParrotSchedulerTaskMeta, best);
     }
 

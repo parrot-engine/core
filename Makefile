@@ -33,11 +33,11 @@ test: $(TEST)
 	exec $(TEST)
 
 $(TEST): $(OUTPUT) test.c
-	$(CC) $(CFLAGS) -o $@ test.c $(OUTPUT) -lm
+	$(CC) $(CFLAGS) -o $@ $(shell pwd)/test.c $(OUTPUT) -lm
 
 $(BUILD_DIR)/%.o: %
 	mkdir -p $(dir $@)
-	$(BEAR) -a -- $(CC) $(CFLAGS) -c -o $@ $<
+	$(BEAR) -a -- $(CC) $(CFLAGS) -c -o $@ $(shell pwd)/$<
 
 clean:
 	rm -r $(BUILD_DIR)
