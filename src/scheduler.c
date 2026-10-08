@@ -121,7 +121,7 @@ void *ParrotScheduler_nextx(ParrotScheduler *self) {
 
     const int64_t MULTIPLIER = 1000;
 
-    const int64_t PRIORITY_WEIGHT = 7500;
+    const int64_t PRIORITY_WEIGHT = 8750;
     const int64_t DURATION_PENALTY = 10;
 
     for (size_t i = 0; i < ParrotArray_size(self->arr_tasks); i++) {

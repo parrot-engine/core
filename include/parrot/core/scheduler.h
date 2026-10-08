@@ -16,7 +16,7 @@ PARROT_API void ParrotScheduler_vdelete(void *self);
 PARROT_API void *ParrotScheduler_create_taskx(ParrotScheduler *self);
 PARROT_API void ParrotScheduler_delete_task(void *task);
 
-PARROT_API void ParrotScheduler_set_task_priority(void *task, /* <0 = blocked, higher is more */ int priority);
+PARROT_API void ParrotScheduler_set_task_priority(void *task, /* <0 = blocked, 0 = lowest priority */ int priority);
 
 PARROT_API void ParrotScheduler_begin_task(void *task);
 PARROT_API void ParrotScheduler_end_task(void *task);
