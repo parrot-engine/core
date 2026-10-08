@@ -4,7 +4,9 @@
 #include "parrot/core/util.h"
 #include <stdbool.h>
 
+/// See `Parrot_coroutine_createx`
 #define Parrot_coroutine_create(type, func) ((type *)Parrot_coroutine_createx(sizeof(type), func))
+/// Does not start the coroutine
 PARROT_API void *Parrot_coroutine_createx(size_t size, void (*func)(void *coroutine));
 PARROT_API void Parrot_coroutine_delete(void *coroutine);
 /// @returns If coroutine can continue running
