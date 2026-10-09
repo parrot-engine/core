@@ -34,17 +34,8 @@ bool ParrotMainLoop_next_frame(ParrotMainLoop *self, float *delta, float max_fps
 
     if (max_fps > 0) {
         float target_delta = 1.0 / max_fps;
-        uint64_t frequency = Parrot_os_get_performance_frequency();
-
-        float elapsed = (Parrot_os_get_performance_counter() - self->frame_start) / (float)frequency;
-        float remaining = target_delta - elapsed;
-        if (remaining > 0.002) {
-            Parrot_os_sleep(remaining - 0.002);
-        }
-
-        while ((Parrot_os_get_performance_counter() - self->frame_start) / (float)frequency < target_delta) {
-            Parrot_os_yield();
-        }
+        Parrot_os_sleep_precise(target_delta - (Parrot_os_get_performance_counter() - self->frame_start) /
+                                                   (float)Parrot_os_get_performance_frequency());
     }
 
     uint64_t frame_end = Parrot_os_get_performance_counter();
