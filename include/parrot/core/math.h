@@ -4,8 +4,10 @@
 #include <math.h> // IWYU pragma: keep
 #include <stdint.h>
 
-#include "parrot/core/util.h"
 #include "parrot/core/reflect.h"
+#include "parrot/core/util.h"
+
+#define PARROT_PI (3.1415926)
 
 /// 48.16 fixed point
 typedef int64_t ParrotFixed64i;
