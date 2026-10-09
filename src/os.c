@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/ucontext.h>
 
 #include "parrot/core/os.h"
 #include "parrot/core/util.h"
