@@ -1,15 +1,6 @@
 #ifndef PARROT_CORE_UTIL_H_
 #define PARROT_CORE_UTIL_H_
 
-#include <stdint.h> // IWYU pragma: keep
-#include <stdlib.h> // IWYU pragma: keep
-#include <string.h> // IWYU pragma: keep
-
-/// Handles crashing the program and sometimes collecting extra info
-typedef void (*ParrotCrashHandlerFunc)(const char *fmt, ...);
-
-extern ParrotCrashHandlerFunc Parrot_crash_handler;
-
 #ifdef __cplusplus
 #define PARROT_CPP(...) __VA_ARGS__
 #define PARROT_C_CPP(c, cpp) cpp
@@ -20,12 +11,21 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 #define PARROT_C(...) __VA_ARGS__
 #endif
 
+#define PARROT_API PARROT_CPP(extern "C")
+
+#include <stdint.h> // IWYU pragma: keep
+#include <stdlib.h> // IWYU pragma: keep
+#include <string.h> // IWYU pragma: keep
+
+/// Handles crashing the program and sometimes collecting extra info
+typedef void (*ParrotCrashHandlerFunc)(const char *fmt, ...);
+
+extern ParrotCrashHandlerFunc Parrot_crash_handler;
+
 #define PARROT_DEPEND(...) __asm__ volatile("" ::__VA_ARGS__)
 
 #define PARROT_STRING(x) #x
 #define PARROT_TYPE_STRING(type) ((void)sizeof(*(type *)NULL), #type)
-
-#define PARROT_API PARROT_CPP(extern "C")
 
 #define PARROT_ALLOC(type_) (type_ *)memset(malloc(sizeof(type_)), 0, sizeof(type_))
 
