@@ -3,7 +3,6 @@
 #include "parrot/core/scope.h"
 #include "parrot/core/util.h"
 #include <stdio.h>
-#include <sys/ucontext.h>
 
 #define STACK_SIZE (8192)
 
