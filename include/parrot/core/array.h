@@ -28,7 +28,7 @@
 #define ParrotArray_push(arr, value)                                                                                    \
     do {                                                                                                                \
         size_t _idx = ParrotArray_alloc(arr, 1);                                                                        \
-        (arr)[_idx] = (value);                                                                                          \
+        *((arr) + (_idx)) = (value);                                                                                    \
     } while (0)
 #define ParrotArray_deln(arr, index, count) ((arr) ? ParrotArray_delx(arr, index, count) : (void)0)
 #define ParrotArray_del(arr, index) ParrotArray_deln(arr, index, 1)
@@ -36,7 +36,7 @@
 #define ParrotArray_put_key(arr, value, key, key_size)                                                                  \
     do {                                                                                                                \
         size_t _idx = ParrotArray_alloc(arr, 1);                                                                        \
-        (arr)[_idx] = (value);                                                                                          \
+        *((arr) + (_idx)) = (value);                                                                                    \
                                                                                                                         \
         ptrdiff_t _old_idx = ParrotArray_findx(arr, key, key_size);                                                     \
         if (_old_idx >= 0) {                                                                                            \
