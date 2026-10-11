@@ -213,30 +213,26 @@ ParrotReflect_resolve_type_ex(ParrotReflect *self,
 /// 0< = Not found
 PARROT_API ptrdiff_t ParrotReflect_resolve_type_by_index(ParrotReflect *self, size_t index);
 
-/// Return type is allocated with malloc() that the caller tkes ownership of
-PARROT_API char *ParrotReflect_get_type_name(ParrotReflect *self, size_t type);
+PARROT_API char *ParrotReflect_get_type_name_malloc(ParrotReflect *self, size_t type);
 PARROT_API size_t ParrotReflect_get_type_size(ParrotReflect *self, size_t type);
-/// Return type is allocated with malloc() that the caller takes ownership of or NULL if tag doesn't exist
-PARROT_API char *ParrotReflect_get_type_tag(ParrotReflect *self, size_t type, const char *key);
+PARROT_API char *ParrotReflect_get_type_tag_malloc(ParrotReflect *self, size_t type, const char *key);
 
 /// 0< = Not found
 PARROT_API ptrdiff_t ParrotReflect_get_type_field(ParrotReflect *self, size_t type, const char *name);
 PARROT_API size_t ParrotReflect_get_type_field_count(ParrotReflect *self, size_t type);
 PARROT_API size_t ParrotReflect_get_type_field_offset(ParrotReflect *self, size_t type, size_t field);
-/// Return type is allocated with malloc() that the caller tkes ownership of
-PARROT_API char *ParrotReflect_get_type_field_typename(ParrotReflect *self, size_t type, size_t field);
-/// Return type is allocated with malloc() that the caller takes ownership of
-PARROT_API char *ParrotReflect_get_type_field_name(ParrotReflect *self, size_t type, size_t field);
+PARROT_API char *ParrotReflect_get_type_field_typename_malloc(ParrotReflect *self, size_t type, size_t field);
+PARROT_API char *ParrotReflect_get_type_field_name_malloc(ParrotReflect *self, size_t type, size_t field);
 /*
  * @returns name of field without array index allocated with malloc() that the caller takes ownership of. Result can't
  * be used as a field lookup
  */
-PARROT_API char *ParrotReflect_get_type_field_basename(ParrotReflect *self, size_t type, size_t field);
+PARROT_API char *ParrotReflect_get_type_field_basename_malloc(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_size(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type, size_t field);
 /// Returns 0 if no array
 PARROT_API size_t ParrotReflect_get_type_field_array_size(ParrotReflect *self, size_t type, size_t field);
-/// Return type is allocated with malloc() that the caller takes ownership of or NULL if tag doesn't exist
-PARROT_API char *ParrotReflect_get_type_field_tag(ParrotReflect *self, size_t type, size_t field, const char *key);
+PARROT_API char *
+ParrotReflect_get_type_field_tag_malloc(ParrotReflect *self, size_t type, size_t field, const char *key);
 
 #endif // PARROT_CORE_REFLECT_H_

@@ -70,7 +70,7 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
         return index;
     }
 
-    char *typename = ParrotReflect_get_type_name(reflect, type);
+    char *typename = ParrotReflect_get_type_name_malloc(reflect, type);
     ParrotScope_push_free(work_scope, typename);
 
     uint32_t entry_index = ParrotArray_size(arr_objects);
@@ -206,7 +206,7 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
         ParrotScope_push_arrfree(entry.scope, *object.p_arr_fields);
 
         for (size_t j = 0; j < ParrotReflect_get_type_field_count(reflect, type); j++) {
-            char *field_typename = ParrotReflect_get_type_field_typename(reflect, type, j);
+            char *field_typename = ParrotReflect_get_type_field_typename_malloc(reflect, type, j);
             ParrotScope_push_free(work_scope, field_typename);
 
             ptrdiff_t field_type = ParrotReflect_resolve_type(reflect, field_typename);
@@ -235,10 +235,10 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
 
             ObjectEntryFieldEntry field = {0};
 
-            field.name = ParrotReflect_get_type_field_name(reflect, type, j);
+            field.name = ParrotReflect_get_type_field_name_malloc(reflect, type, j);
             ParrotScope_push_free(entry.scope, field.name);
 
-            char *basename = ParrotReflect_get_type_field_basename(reflect, type, j);
+            char *basename = ParrotReflect_get_type_field_basename_malloc(reflect, type, j);
             ParrotScope_push_free(work_scope, basename);
 
             size_t count = ParrotReflect_get_type_field_array_size(reflect, type, j);
@@ -285,7 +285,7 @@ static void generate_object_queue(ObjectEntry **p_arr_objects,
     ParrotArray_free(hm_ptr_map);
 }
 
-void Parrot_serialize_bytes(
+void Parrot_serialize_bytes_malloc(
     ParrotBuffer *output, ParrotReflect *reflect, size_t type, const void *data_ptr, bool with_ptrs) {
     PARROT_FAIL_NULL(reflect);
     PARROT_FAIL_NULL(data_ptr);
@@ -306,7 +306,8 @@ void Parrot_serialize_bytes(
         for (size_t j = 0; j < ParrotArray_size(*arr_objects[i].p_arr_data); j++) {
             switch (arr_objects[i].type) {
             case ObjectEntryType_OBJECT: {
-                char *typename = ParrotReflect_get_type_name(reflect, (*arr_objects[i].p_arr_data)[j].object.type);
+                char *typename =
+                    ParrotReflect_get_type_name_malloc(reflect, (*arr_objects[i].p_arr_data)[j].object.type);
                 ParrotScope_push_free(scope, typename);
                 ParrotBuffer_write_ascii(output, typename);
 
