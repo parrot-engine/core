@@ -13,6 +13,7 @@
 
 #define PARROT_API PARROT_CPP(extern "C")
 
+#include <stdarg.h>
 #include <stdint.h> // IWYU pragma: keep
 #include <stdlib.h> // IWYU pragma: keep
 #include <string.h> // IWYU pragma: keep
@@ -65,5 +66,8 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 #define PARROT_RET_COND(cond) PARROT_RET_COND_V(cond, )
 
 #define PARROT_UNREACHABLE() PARROT_FAIL_MSG("Unreachable")
+
+PARROT_API char *Parrot_vsprintf_malloc(const char *fmt, va_list ap);
+PARROT_API char *Parrot_sprintf_malloc(const char *fmt, ...);
 
 #endif // PARROT_CORE_UTIL_H_
