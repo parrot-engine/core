@@ -83,7 +83,7 @@ static void ParrotOSThreadState_restore_impl(ParrotOSThreadState *self, ParrotOS
         **out_current = (ParrotOSThreadState){0};
     }
 
-    bool called = false;
+    volatile bool called = false;
 
     getcontext(&self->return_context);
 

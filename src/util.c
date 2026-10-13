@@ -13,6 +13,12 @@ static void Parrot_crash_handler_impl(const char *fmt, ...) {
 }
 
 char *Parrot_vsprintf_malloc(const char *fmt, va_list ap) {
+    PARROT_FAIL_NULL(fmt);
+
+    if (!fmt) {
+        return NULL;
+    }
+
     char test = 0;
     va_list ap_copy;
     va_copy(ap_copy, ap);

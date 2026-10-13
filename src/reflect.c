@@ -392,7 +392,7 @@ char *ParrotReflect_parse_type(const char *type, size_t *out_ptr_level, bool *ou
 
     ParrotArray_push(arr_type_str, '\0');
 
-    char *ret = strcpy(calloc(ParrotArray_size(arr_type_str), sizeof(char)), arr_type_str);
+    char *ret = strcpy(calloc(ParrotArray_size(arr_type_str) + 1, sizeof(char)), arr_type_str);
     ParrotArray_free(arr_type_str);
     return ret;
 }
