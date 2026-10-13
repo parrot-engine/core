@@ -19,15 +19,13 @@
 #define ParrotArray_alloc_at(arr, index, count) ((arr) = ParrotArray_allocx(ParrotArray_force_init(arr), index, count))
 /**
  * Allocates elements at end
- *
- * @returns index of first new element
  */
-#define ParrotArray_alloc(arr, count)                                                                                   \
-    (ParrotArray_alloc_at(arr, ParrotArray_size(arr), count), ParrotArray_size(arr) - 1)
+#define ParrotArray_alloc(arr, count) ParrotArray_alloc_at(arr, ParrotArray_size(arr), count)
 
 #define ParrotArray_push(arr, value)                                                                                    \
     do {                                                                                                                \
-        size_t _idx = ParrotArray_alloc(arr, 1);                                                                        \
+        size_t _idx = ParrotArray_size(arr);                                                                            \
+        ParrotArray_alloc(arr, 1);                                                                                      \
         *((arr) + (_idx)) = (value);                                                                                    \
     } while (0)
 #define ParrotArray_deln(arr, index, count) ((arr) ? ParrotArray_delx(arr, index, count) : (void)0)
@@ -35,15 +33,16 @@
 
 #define ParrotArray_put_key(arr, value, key, key_size)                                                                  \
     do {                                                                                                                \
-        size_t _idx = ParrotArray_alloc(arr, 1);                                                                        \
+        size_t _idx = ParrotArray_size(arr);                                                                            \
+        ParrotArray_alloc(arr, 1);                                                                                      \
         *((arr) + (_idx)) = (value);                                                                                    \
                                                                                                                         \
         ptrdiff_t _old_idx = ParrotArray_findx(arr, key, key_size);                                                     \
+        ParrotArray_mapx(arr, _idx, key, key_size);                                                                     \
+                                                                                                                        \
         if (_old_idx >= 0) {                                                                                            \
             ParrotArray_del(arr, _old_idx);                                                                             \
         }                                                                                                               \
-                                                                                                                        \
-        ParrotArray_mapx(arr, _idx, key, key_size);                                                                     \
     } while (0)
 #define ParrotArray_put(arr, value) ParrotArray_put_key(arr, value, &(value).key, sizeof((value).key));
 #define ParrotArray_puts(arr, value) ParrotArray_put_key(arr, value, (value).key, strlen((value).key));
