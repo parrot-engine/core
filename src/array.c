@@ -208,7 +208,7 @@ static void rehash_table(ArrayMeta *self) {
     size_t old_capacity = self->hash_table_capacity;
     ArrayHashEntry *old_table = self->hash_table;
 
-    self->hash_table_capacity = PARROT_MAX(self->hash_table_capacity * 1.5, 64);
+    self->hash_table_capacity = PARROT_MAX(self->hash_table_capacity + (self->hash_table_capacity >> 1), 64);
     self->hash_table = calloc(self->hash_table_capacity, sizeof(*self->hash_table));
 
     for (size_t i = 0; i < self->hash_table_capacity; i++) {
@@ -239,7 +239,7 @@ void ParrotArray_mapx(void *arr, size_t index, const void *key, size_t key_size)
 
     map_hash(self, index, Parrot_crc32(key, key_size));
 
-    if (++self->hash_table_size >= self->hash_table_capacity * 0.75) {
+    if (++self->hash_table_size * 4 >= self->hash_table_capacity * 3) {
         rehash_table(self);
     }
 }
