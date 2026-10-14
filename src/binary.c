@@ -393,6 +393,16 @@ uint8_t Parrot_char_to_ascii(char c) {
     switch (c) {
     case '\0':
         return 0x00;
+    case '\a':
+        return 0x07;
+    case '\b':
+        return 0x08;
+    case '\n':
+        return 0x0A;
+    case '\r':
+        return 0x0D;
+    case ' ':
+        return 0x20;
     case '0':
         return 0x30;
     case '1':
@@ -583,6 +593,16 @@ char Parrot_ascii_to_char(uint8_t ascii) {
     switch (ascii) {
     case 0x00:
         return '\0';
+    case 0x07:
+        return '\a';
+    case 0x08:
+        return '\b';
+    case 0x0A:
+        return '\n';
+    case 0x0D:
+        return '\r';
+    case 0x20:
+        return ' ';
     case 0x30:
         return '0';
     case 0x31:
