@@ -37,6 +37,8 @@ PARROT_API uint32_t ParrotScope_push_with_free(ParrotScope *self,
 
 /// Pushes a free(ptr) function
 PARROT_API uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr);
+/// Pushes a unix close(fd) function
+PARROT_API uint32_t ParrotScope_push_unix_close(ParrotScope *self, int fd);
 
 #define ParrotScope_push_arrfree(p_self, p_arr) ParrotScope_push_arrfree_raw(p_self, (void **)&(p_arr))
 uint32_t ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr);

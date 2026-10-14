@@ -1,6 +1,10 @@
 #include "parrot/core/scope.h"
 #include "parrot/core/array.h"
 
+#ifdef __unix__
+#include <unistd.h>
+#endif
+
 typedef struct {
     uint32_t key;
 
@@ -117,6 +121,18 @@ static void free_wrapper(void *ctx) {
 uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr) {
     return ParrotScope_push(self, free_wrapper, ptr);
 }
+
+#ifdef __unix__
+static void unix_close_wrapper(void *ctx) {
+    close(*(int *)ctx);
+}
+
+uint32_t ParrotScope_push_unix_close(ParrotScope *self, int fd) {
+    int *ctx = malloc(sizeof(int));
+    *ctx = fd;
+    return ParrotScope_push_with_free(self, unix_close_wrapper, free, ctx);
+}
+#endif
 
 typedef struct {
     void **data;
