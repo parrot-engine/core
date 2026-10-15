@@ -1,5 +1,6 @@
 #include "parrot/core/binary.h"
 #include "parrot/core/array.h"
+#include "parrot/core/util.h"
 
 struct ParrotBuffer {
     ParrotBufferRead read;
@@ -140,6 +141,18 @@ size_t ParrotBuffer_rtell(ParrotBuffer *self) {
     return self->read_position;
 }
 
+void ParrotBuffer_rskip(ParrotBuffer *self, size_t count) {
+    PARROT_FAIL_NULL(self);
+
+    self->read_position += count;
+}
+
+void ParrotBuffer_ralign(ParrotBuffer *self, size_t alignment) {
+    PARROT_FAIL_NULL(self);
+
+    self->read_position += alignment - self->read_position % alignment;
+}
+
 void ParrotBuffer_pad(ParrotBuffer *self, uint8_t data, size_t count) {
     PARROT_FAIL_NULL(self);
 
@@ -156,7 +169,7 @@ void ParrotBuffer_pad_until(ParrotBuffer *self, uint8_t fill, size_t until_posit
     }
 }
 
-void ParrotBuffer_align(ParrotBuffer *self, uint8_t fill, size_t alignment) {
+void ParrotBuffer_pad_align(ParrotBuffer *self, uint8_t fill, size_t alignment) {
     PARROT_FAIL_NULL(self);
 
     while (self->bytes_written % alignment != 0) {

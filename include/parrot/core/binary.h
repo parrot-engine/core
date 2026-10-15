@@ -36,9 +36,11 @@ PARROT_API void ParrotBuffer_vdelete(void *self);
 
 PARROT_API void ParrotBuffer_rseek(ParrotBuffer *self, size_t position);
 PARROT_API size_t ParrotBuffer_rtell(ParrotBuffer *self);
+PARROT_API void ParrotBuffer_rskip(ParrotBuffer *self, size_t count);
+PARROT_API void ParrotBuffer_ralign(ParrotBuffer *self, size_t alignment);
 PARROT_API void ParrotBuffer_pad(ParrotBuffer *self, uint8_t data, size_t count);
 PARROT_API void ParrotBuffer_pad_until(ParrotBuffer *self, uint8_t fill, size_t until_position);
-PARROT_API void ParrotBuffer_align(ParrotBuffer *self, uint8_t fill, size_t alignment);
+PARROT_API void ParrotBuffer_pad_align(ParrotBuffer *self, uint8_t fill, size_t alignment);
 
 PARROT_API size_t ParrotBuffer_read(ParrotBuffer *self, ParrotBufferEndian endian, void *out, size_t size);
 PARROT_API void ParrotBuffer_write(ParrotBuffer *self, ParrotBufferEndian endian, const void *data, size_t size);
