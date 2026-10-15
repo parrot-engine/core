@@ -156,10 +156,16 @@ void ParrotBuffer_ralign(ParrotBuffer *self, size_t alignment) {
     self->read_position += alignment - self->align_read_position % alignment;
 }
 
-void ParrotBuffer_ralign_reset(ParrotBuffer *self) {
+void ParrotBuffer_set_ralign_position(ParrotBuffer *self, size_t position) {
     PARROT_FAIL_NULL(self);
 
-    self->align_bytes_written = 0;
+    self->align_read_position = position;
+}
+
+size_t ParrotBuffer_get_ralign_position(ParrotBuffer *self) {
+    PARROT_FAIL_NULL(self);
+
+    return self->align_read_position;
 }
 
 void ParrotBuffer_pad(ParrotBuffer *self, uint8_t data, size_t count) {
@@ -186,10 +192,16 @@ void ParrotBuffer_pad_align(ParrotBuffer *self, uint8_t fill, size_t alignment) 
     }
 }
 
-void ParrotBuffer_pad_align_reset(ParrotBuffer *self) {
+void ParrotBuffer_set_pad_align_position(ParrotBuffer *self, size_t position) {
     PARROT_FAIL_NULL(self);
 
-    self->align_read_position = 0;
+    self->align_bytes_written = position;
+}
+
+size_t ParrotBuffer_get_pad_align_position(ParrotBuffer *self) {
+    PARROT_FAIL_NULL(self);
+
+    return self->align_bytes_written;
 }
 
 size_t ParrotBuffer_read(ParrotBuffer *self, ParrotBufferEndian endian, void *out_ptr, size_t size) {
