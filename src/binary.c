@@ -8,7 +8,10 @@ struct ParrotBuffer {
     ParrotScope *scope;
 
     size_t bytes_written;
+    size_t align_bytes_written;
+
     size_t read_position;
+    size_t align_read_position;
 };
 
 ParrotBuffer *ParrotBuffer_new(ParrotScope *scope, ParrotBufferRead read, ParrotBufferWrite write) {
@@ -150,7 +153,13 @@ void ParrotBuffer_rskip(ParrotBuffer *self, size_t count) {
 void ParrotBuffer_ralign(ParrotBuffer *self, size_t alignment) {
     PARROT_FAIL_NULL(self);
 
-    self->read_position += alignment - self->read_position % alignment;
+    self->read_position += alignment - self->align_read_position % alignment;
+}
+
+void ParrotBuffer_ralign_reset(ParrotBuffer *self) {
+    PARROT_FAIL_NULL(self);
+
+    self->align_bytes_written = 0;
 }
 
 void ParrotBuffer_pad(ParrotBuffer *self, uint8_t data, size_t count) {
@@ -172,9 +181,15 @@ void ParrotBuffer_pad_until(ParrotBuffer *self, uint8_t fill, size_t until_posit
 void ParrotBuffer_pad_align(ParrotBuffer *self, uint8_t fill, size_t alignment) {
     PARROT_FAIL_NULL(self);
 
-    while (self->bytes_written % alignment != 0) {
+    while (self->align_bytes_written % alignment != 0) {
         ParrotBuffer_write8(self, fill);
     }
+}
+
+void ParrotBuffer_pad_align_reset(ParrotBuffer *self) {
+    PARROT_FAIL_NULL(self);
+
+    self->align_read_position = 0;
 }
 
 size_t ParrotBuffer_read(ParrotBuffer *self, ParrotBufferEndian endian, void *out_ptr, size_t size) {
@@ -190,6 +205,7 @@ size_t ParrotBuffer_read(ParrotBuffer *self, ParrotBufferEndian endian, void *ou
             return i;
         }
         self->read_position++;
+        self->align_read_position++;
     }
 
     if (endian != ParrotBufferEndian_HOST) {
@@ -227,11 +243,13 @@ void ParrotBuffer_write(ParrotBuffer *self, ParrotBufferEndian endian, const voi
         for (size_t i = size; i > 0; i--) {
             self->write(self->scope, data[i - 1]);
             self->bytes_written++;
+            self->align_bytes_written++;
         }
     } else {
         for (size_t i = 0; i < size; i++) {
             self->write(self->scope, data[i]);
             self->bytes_written++;
+            self->align_bytes_written++;
         }
     }
 }
