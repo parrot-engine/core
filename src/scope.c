@@ -122,6 +122,14 @@ uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr) {
     return ParrotScope_push(self, free_wrapper, ptr);
 }
 
+static void fclose_wrapper(void *ctx) {
+    fclose(ctx);
+}
+
+uint32_t ParrotScope_push_fclose(ParrotScope *self, FILE *file) {
+    return ParrotScope_push(self, fclose_wrapper, file);
+}
+
 #ifdef __unix__
 static void unix_close_wrapper(void *ctx) {
     close(*(int *)ctx);

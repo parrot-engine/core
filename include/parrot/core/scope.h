@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "parrot/core/util.h"
 
@@ -37,6 +38,8 @@ PARROT_API uint32_t ParrotScope_push_with_free(ParrotScope *self,
 
 /// Pushes a free(ptr) function
 PARROT_API uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr);
+/// Pushes a fclose(file) function
+PARROT_API uint32_t ParrotScope_push_fclose(ParrotScope *self, FILE *file);
 /// Pushes a unix close(fd) function
 PARROT_API uint32_t ParrotScope_push_unix_close(ParrotScope *self, int fd);
 
