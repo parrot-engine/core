@@ -148,11 +148,19 @@ void ParrotBuffer_pad(ParrotBuffer *self, uint8_t data, size_t count) {
     }
 }
 
-void ParrotBuffer_pad_until(ParrotBuffer *self, uint8_t data, size_t until_position) {
+void ParrotBuffer_pad_until(ParrotBuffer *self, uint8_t fill, size_t until_position) {
     PARROT_FAIL_NULL(self);
 
     while (until_position >= self->bytes_written) {
-        ParrotBuffer_write8(self, data);
+        ParrotBuffer_write8(self, fill);
+    }
+}
+
+void ParrotBuffer_align(ParrotBuffer *self, uint8_t fill, size_t alignment) {
+    PARROT_FAIL_NULL(self);
+
+    while (self->bytes_written % alignment != 0) {
+        ParrotBuffer_write8(self, fill);
     }
 }
 
