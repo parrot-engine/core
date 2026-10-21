@@ -24,20 +24,20 @@ ParrotBuffer *ParrotBuffer_new(ParrotScope *scope, ParrotBufferRead read, Parrot
     return self;
 }
 
-static bool file_read(ParrotScope *scope, size_t position, uint8_t *out) {
+static bool file_read(ParrotScope *scope, size_t offset, size_t size, uint8_t *out) {
     FILE *file = ParrotScope_get_ctx(scope, FILE *);
 
     size_t old_position = ftell(file);
-    fseek(file, position, SEEK_SET);
-    bool success = fread(out, sizeof(*out), 1, file) == sizeof(*out);
+    fseek(file, offset, SEEK_SET);
+    bool success = fread(out, size, 1, file) == size;
     fseek(file, old_position, SEEK_SET);
 
     return success;
 }
 
-static void file_write(ParrotScope *scope, uint8_t byte) {
+static void file_write(ParrotScope *scope, size_t size, const uint8_t *data) {
     FILE *file = ParrotScope_get_ctx(scope, FILE *);
-    fwrite(&byte, sizeof(byte), 1, file);
+    fwrite(data, sizeof(uint8_t), size, file);
 }
 
 ParrotBuffer *ParrotBuffer_new_file(FILE *file) {
@@ -57,22 +57,22 @@ typedef struct {
     ParrotBufferWrite write;
 } BytearrayCtx;
 
-static bool bytearray_read(ParrotScope *scope, size_t position, uint8_t *out) {
+static bool bytearray_read(ParrotScope *scope, size_t offset, size_t size, uint8_t *out) {
     BytearrayCtx *ctx = ParrotScope_get_ctx(scope, BytearrayCtx *);
 
-    if (position >= ctx->size) {
+    if (offset + size >= ctx->size) {
         return false;
     }
 
-    *out = (*ctx->p_data)[position];
+    memcpy(out, *ctx->p_data + offset, size);
     return true;
 }
 
-static void bytearray_write_wrapper(ParrotScope *scope, uint8_t byte) {
+static void bytearray_write_wrapper(ParrotScope *scope, size_t size, const uint8_t *data) {
     BytearrayCtx *ctx = ParrotScope_get_ctx(scope, BytearrayCtx *);
 
     if (ctx->write) {
-        ctx->write(ctx->write_scope, byte);
+        ctx->write(ctx->write_scope, size, data);
     }
 }
 
@@ -96,26 +96,29 @@ ParrotBuffer_new_bytearray(ParrotScope *write_scope, const void **p_data, size_t
     return ParrotBuffer_new(scope, bytearray_read, bytearray_write_wrapper);
 }
 
-static bool stbds_array_read(ParrotScope *scope, size_t position, uint8_t *out) {
+static bool array_read(ParrotScope *scope, size_t offset, size_t size, uint8_t *out) {
     uint8_t **p_arr_data = ParrotScope_get_ctx(scope, uint8_t **);
 
-    if (position >= ParrotArray_size(*p_arr_data)) {
+    if (offset + size >= ParrotArray_size(*p_arr_data)) {
         return false;
     }
 
-    *out = (*p_arr_data)[position];
+    memcpy(out, *p_arr_data + offset, size);
     return true;
 }
 
-static void stbds_array_write(ParrotScope *scope, uint8_t byte) {
+static void array_write(ParrotScope *scope, size_t size, const uint8_t *data) {
     uint8_t **p_arr_data = ParrotScope_get_ctx(scope, uint8_t **);
-    ParrotArray_push(*p_arr_data, byte);
+
+    size_t index = ParrotArray_size(*p_arr_data);
+    ParrotArray_alloc(*p_arr_data, size);
+    memcpy(*p_arr_data + index, data, size);
 }
 
 ParrotBuffer *ParrotBuffer_new_array_raw(uint8_t **p_arr_data) {
     ParrotScope *scope = ParrotScope_new(NULL);
     ParrotScope_set_ctx(scope, p_arr_data);
-    return ParrotBuffer_new(scope, stbds_array_read, stbds_array_write);
+    return ParrotBuffer_new(scope, array_read, array_write);
 }
 
 void ParrotBuffer_delete(ParrotBuffer *self) {
@@ -212,13 +215,9 @@ size_t ParrotBuffer_read(ParrotBuffer *self, ParrotBufferEndian endian, void *ou
 
     PARROT_RET_COND_V(!self->read, 0);
 
-    for (size_t i = 0; i < size; i++) {
-        if (!self->read(self->scope, self->read_position, &out[i])) {
-            return i;
-        }
-        self->read_position++;
-        self->align_read_position++;
-    }
+    self->read(self->scope, self->read_position, size, out);
+    self->read_position += size;
+    self->align_read_position += size;
 
     if (endian != ParrotBufferEndian_HOST) {
         uint16_t endian_test_big = 1;
@@ -252,18 +251,20 @@ void ParrotBuffer_write(ParrotBuffer *self, ParrotBufferEndian endian, const voi
 
     ParrotBufferEndian host_endian = endian_test == 1 ? ParrotBufferEndian_LITTLE : ParrotBufferEndian_BIG;
     if (endian != ParrotBufferEndian_HOST && endian != host_endian) {
-        for (size_t i = size; i > 0; i--) {
-            self->write(self->scope, data[i - 1]);
-            self->bytes_written++;
-            self->align_bytes_written++;
-        }
-    } else {
+        uint8_t *tmp = malloc(size);
+
         for (size_t i = 0; i < size; i++) {
-            self->write(self->scope, data[i]);
-            self->bytes_written++;
-            self->align_bytes_written++;
+            tmp[i] = data[size - i - 1];
         }
+
+        self->write(self->scope, size, tmp);
+        free(tmp);
+    } else {
+        self->write(self->scope, size, data);
     }
+
+    self->bytes_written += size;
+    self->align_bytes_written += size;
 }
 
 bool ParrotBuffer_read8(ParrotBuffer *self, uint8_t *out) {
