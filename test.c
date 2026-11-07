@@ -6,6 +6,7 @@
 #include "parrot/core/math.h"
 #include "parrot/core/os.h"
 #include "parrot/core/scheduler.h"
+#include "parrot/core/util.h"
 
 #include <stdio.h>
 
@@ -82,6 +83,8 @@ static void co_test_scheduler(void *cox) {
     const double resolution = 0.001;
 
     Task **core_tasks = calloc(sizeof(Task *), core_count);
+    PARROT_FAIL_NULL(core_tasks);
+
     for (int i = 0; i < core_count; i++) {
         core_tasks[i] = NULL;
     }
@@ -143,6 +146,8 @@ static void co_test_matrix(void *cox) {
     TestSharedData *co = cox;
 
     ParrotMat *matrices = calloc(ITERATIONS, sizeof(ParrotMat));
+    PARROT_FAIL_NULL(matrices);
+
     uint64_t begin = Parrot_os_get_performance_counter();
 
     ParrotTransform transform = ParrotTransform_new();

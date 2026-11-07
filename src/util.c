@@ -24,6 +24,7 @@ char *Parrot_vsprintf_malloc(const char *fmt, va_list ap) {
     va_copy(ap_copy, ap);
 
     char *str = calloc(vsnprintf(&test, 1, fmt, ap_copy) + 1, sizeof(char));
+    PARROT_RET_COND_V(!str, NULL);
     vsprintf(str, fmt, ap);
 
     return str;
@@ -35,6 +36,16 @@ char *Parrot_sprintf_malloc(const char *fmt, ...) {
     char *ret = Parrot_vsprintf_malloc(fmt, ap);
     va_end(ap);
     return ret;
+}
+
+char *Parrot_strdup_malloc(const char *str) {
+    PARROT_FAIL_NULL(str);
+
+    char *dup = calloc(strlen(str) + 1, sizeof(char));
+    PARROT_RET_COND_V(!dup, NULL);
+
+    strcpy(dup, str);
+    return dup;
 }
 
 ParrotCrashHandlerFunc Parrot_crash_handler = Parrot_crash_handler_impl;

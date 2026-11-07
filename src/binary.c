@@ -252,6 +252,7 @@ void ParrotBuffer_write(ParrotBuffer *self, ParrotBufferEndian endian, const voi
     ParrotBufferEndian host_endian = endian_test == 1 ? ParrotBufferEndian_LITTLE : ParrotBufferEndian_BIG;
     if (endian != ParrotBufferEndian_HOST && endian != host_endian) {
         uint8_t *tmp = malloc(size);
+        PARROT_FAIL_NULL(tmp);
 
         for (size_t i = 0; i < size; i++) {
             tmp[i] = data[size - i - 1];

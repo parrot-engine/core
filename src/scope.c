@@ -137,7 +137,10 @@ static void unix_close_wrapper(void *ctx) {
 
 uint32_t ParrotScope_push_unix_close(ParrotScope *self, int fd) {
     int *ctx = malloc(sizeof(int));
+    PARROT_FAIL_NULL(ctx);
+
     *ctx = fd;
+
     return ParrotScope_push_with_free(self, unix_close_wrapper, free, ctx);
 }
 #endif

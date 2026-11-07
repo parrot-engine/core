@@ -4,6 +4,7 @@
 #include "parrot/core/array.h"
 #include "parrot/core/reflect.h"
 #include "parrot/core/scope.h"
+#include "parrot/core/util.h"
 
 #define FAIL_INVALID_TYPE(type) PARROT_FAIL_FMT("Unknown entry type: %d", type)
 #define FAIL_REGISTERED_TYPE(type)                                                                                      \
@@ -147,10 +148,10 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
         for (size_t i = 0; description->tags[i][0]; i++) {
             const char **tag = description->tags[i];
 
-            char *key = strcpy(calloc(strlen(tag[0]) + 1, sizeof(char)), tag[0]);
+            char *key = Parrot_strdup_malloc(tag[0]);
             ParrotScope_push_free(type_info.scope, key);
 
-            char *value = strcpy(calloc(strlen(tag[1]) + 1, sizeof(char)), tag[1]);
+            char *value = Parrot_strdup_malloc(tag[1]);
             ParrotScope_push_free(type_info.scope, value);
 
             ParrotArray_puts(*type_info.sh_tags, ((ParrotReflectTag){key, value}));
@@ -209,6 +210,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
 
                     size_t remaining = i;
                     size_t *indices = calloc(ParrotArray_size(arr_dimensions), sizeof(size_t));
+                    PARROT_FAIL_NULL(indices);
 
                     for (size_t j = ParrotArray_size(arr_dimensions); j-- > 0;) {
                         indices[j] = remaining % arr_dimensions[j];
@@ -230,8 +232,7 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
                 field_info.offset = description->unique_data.type_field_data.offset +
                                     i * description->unique_data.type_field_data.field_base_size;
 
-                field_info.type = strcpy(calloc(strlen(description->unique_data.type_field_data.type) + 1, sizeof(char)),
-                                         description->unique_data.type_field_data.type);
+                field_info.type = Parrot_strdup_malloc(description->unique_data.type_field_data.type);
                 ParrotScope_push_free(field_info.scope, field_info.type);
 
                 field_info.size = description->unique_data.type_field_data.field_base_size;
@@ -244,10 +245,10 @@ static void register_type(ParrotReflect *self, const ParrotReflectDescription *d
                     for (size_t j = 0; description->tags[j][0]; j++) {
                         const char **tag = description->tags[j];
 
-                        char *key = strcpy(calloc(strlen(tag[0]) + 1, sizeof(char)), tag[0]);
+                        char *key = Parrot_strdup_malloc(tag[0]);
                         ParrotScope_push_free(field_info.scope, key);
 
-                        char *value = strcpy(calloc(strlen(tag[1]) + 1, sizeof(char)), tag[1]);
+                        char *value = Parrot_strdup_malloc(tag[1]);
                         ParrotScope_push_free(field_info.scope, value);
 
                         ParrotArray_put(*field_info.sh_tags, ((ParrotReflectTag){key, value}));
@@ -392,7 +393,9 @@ char *ParrotReflect_parse_type(const char *type, size_t *out_ptr_level, bool *ou
 
     ParrotArray_push(arr_type_str, '\0');
 
-    char *ret = strcpy(calloc(ParrotArray_size(arr_type_str) + 1, sizeof(char)), arr_type_str);
+    char *ret = Parrot_strdup_malloc(arr_type_str);
+    PARROT_FAIL_NULL(ret);
+
     ParrotArray_free(arr_type_str);
     return ret;
 }
@@ -405,8 +408,13 @@ ptrdiff_t ParrotReflect_resolve_type_ex(
     char *parsed_type = ParrotReflect_parse_type(type, out_ptr_level, out_is_const);
 
     type = parsed_type;
-    while (ParrotArray_find(self->sh_aliases, type) >= 0) {
-        type = ((ParrotReflectAliasInfo *)ParrotArray_findp(self->sh_aliases, type))->value;
+    for (;;) {
+        ParrotReflectAliasInfo *alias_info = ParrotArray_findp(self->sh_aliases, type);
+        if (!alias_info) {
+            break;
+        }
+
+        type = alias_info->value;
     }
 
     ptrdiff_t ret = ParrotArray_find(self->sh_types, type);

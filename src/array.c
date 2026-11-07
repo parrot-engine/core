@@ -210,6 +210,7 @@ static void rehash_table(ArrayMeta *self) {
 
     self->hash_table_capacity = PARROT_MAX(self->hash_table_capacity + (self->hash_table_capacity >> 1), 64);
     self->hash_table = calloc(self->hash_table_capacity, sizeof(*self->hash_table));
+    PARROT_FAIL_NULL(self->hash_table);
 
     for (size_t i = 0; i < self->hash_table_capacity; i++) {
         self->hash_table[i].index = SIZE_MAX;

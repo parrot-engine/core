@@ -23,6 +23,8 @@ typedef void (*ParrotCrashHandlerFunc)(const char *fmt, ...);
 
 extern ParrotCrashHandlerFunc Parrot_crash_handler;
 
+#define PARROT_CALL_CRASH_HANDLER(...)
+
 #define PARROT_DEPEND(...) __asm__ volatile("" ::__VA_ARGS__)
 
 #define PARROT_STRING(x) #x
@@ -40,7 +42,10 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 #define PARROT_META_USER(type, meta) ((void *)((uint8_t *)(meta) + PARROT_META_SIZE(type, 0)))
 
 #define PARROT_FAIL_FMT(fmt, ...)                                                                                       \
-    Parrot_crash_handler("(%s:%d in \"%s\") ERROR: " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+    do {                                                                                                                \
+        Parrot_crash_handler("(%s:%d in \"%s\") ERROR: " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);        \
+        abort();                                                                                                        \
+    } while (0)
 #define PARROT_FAIL_MSG(msg) PARROT_FAIL_FMT("%s", msg)
 
 #define PARROT_FAIL_COND_FMT(cond, fmt, ...)                                                                            \
@@ -69,5 +74,6 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 
 PARROT_API char *Parrot_vsprintf_malloc(const char *fmt, va_list ap);
 PARROT_API char *Parrot_sprintf_malloc(const char *fmt, ...);
+PARROT_API char *Parrot_strdup_malloc(const char *str);
 
 #endif // PARROT_CORE_UTIL_H_
