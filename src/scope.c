@@ -79,10 +79,6 @@ void *ParrotScope_get_ctx_raw(ParrotScope *self) {
     return self->ctx;
 }
 
-static void scope_delete_wrapper(void *ctx) {
-    ParrotScope_delete(ctx);
-}
-
 void ParrotScope_set_parent(ParrotScope *self, ParrotScope *parent) {
     PARROT_FAIL_NULL(self);
 
@@ -92,7 +88,7 @@ void ParrotScope_set_parent(ParrotScope *self, ParrotScope *parent) {
 
     self->parent = parent;
     if (parent) {
-        self->parent_delete_id = ParrotScope_push(parent, scope_delete_wrapper, self);
+        self->parent_delete_id = ParrotScope_push(parent, ParrotScope_vdelete, self);
     }
 }
 
@@ -114,12 +110,8 @@ ParrotScope_push_with_free(ParrotScope *self, void (*func)(void *ctx), void (*fr
     return entry.key;
 }
 
-static void free_wrapper(void *ctx) {
-    free(ctx);
-}
-
 uint32_t ParrotScope_push_free(ParrotScope *self, void *ptr) {
-    return ParrotScope_push(self, free_wrapper, ptr);
+    return ParrotScope_push(self, free, ptr);
 }
 
 static void fclose_wrapper(void *ctx) {

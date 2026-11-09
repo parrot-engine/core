@@ -10,38 +10,182 @@
 #define MAX_CLASS_SIZE (64)
 
 typedef enum {
-    ParrotRegexExprType_EOF,
-    ParrotRegexExprType_DOT,
-    ParrotRegexExprType_BEGIN,
-    ParrotRegexExprType_END,
-    ParrotRegexExprType_QUESTIONMARK,
-    ParrotRegexExprType_STAR,
-    ParrotRegexExprType_PLUS,
-    ParrotRegexExprType_CHAR,
-    ParrotRegexExprType_CHAR_CLASS,
-    ParrotRegexExprType_INV_CHAR_CLASS,
-    ParrotRegexExprType_DIGIT,
-    ParrotRegexExprType_NOT_DIGIT,
-    ParrotRegexExprType_ALPHA,
-    ParrotRegexExprType_NOT_ALPHA,
-    ParrotRegexExprType_WHITESPACE,
-    ParrotRegexExprType_NOT_WHITESPACE,
-} ParrotRegexExprType;
+    ParrotRegexTokenType_EOF,
+    ParrotRegexTokenType_DOT,
+    ParrotRegexTokenType_BEGIN,
+    ParrotRegexTokenType_END,
+    ParrotRegexTokenType_QUESTIONMARK,
+    ParrotRegexTokenType_STAR,
+    ParrotRegexTokenType_PLUS,
+    ParrotRegexTokenType_CHAR,
+    ParrotRegexTokenType_CHAR_CLASS,
+    ParrotRegexTokenType_INV_CHAR_CLASS,
+    ParrotRegexTokenType_DIGIT,
+    ParrotRegexTokenType_NOT_DIGIT,
+    ParrotRegexTokenType_ALPHA,
+    ParrotRegexTokenType_NOT_ALPHA,
+    ParrotRegexTokenType_WHITESPACE,
+    ParrotRegexTokenType_NOT_WHITESPACE,
+    ParrotRegexTokenType_GROUP,
+} ParrotRegexTokenType;
 
-typedef struct {
-    unsigned char type;
+typedef struct ParrotRegexToken ParrotRegexToken;
+struct ParrotRegexToken {
+    ParrotRegexTokenType type;
     union {
-        char ch;
+        char char_data;
         char *class_data;
+        struct {
+            ParrotRegexToken **p_arr_tokens;
+        } group_data;
     } data;
-} ParrotRegexExpr;
+};
 
 struct ParrotRegex {
     ParrotScope *scope;
 
-    ParrotRegexExpr *arr_expr;
+    ParrotRegexToken *arr_expr;
     char **arr_class_buf;
 };
+
+static const char *next_token(ParrotScope *scope, const char *pattern, ParrotRegexToken *out) {
+    char c = *pattern++;
+    memset(out, 0, sizeof(ParrotRegexToken));
+
+    switch (c) {
+    case '^': {
+        out->type = ParrotRegexTokenType_BEGIN;
+    } break;
+    case '$': {
+        out->type = ParrotRegexTokenType_END;
+    } break;
+    case '.': {
+        out->type = ParrotRegexTokenType_DOT;
+    } break;
+    case '*': {
+        out->type = ParrotRegexTokenType_STAR;
+    } break;
+    case '+': {
+        out->type = ParrotRegexTokenType_PLUS;
+    } break;
+    case '?': {
+        out->type = ParrotRegexTokenType_QUESTIONMARK;
+    } break;
+    case '\\': {
+        switch (*pattern) {
+        case '\0':
+            break;
+
+        case 'd': {
+            out->type = ParrotRegexTokenType_DIGIT;
+        } break;
+        case 'D': {
+            out->type = ParrotRegexTokenType_NOT_DIGIT;
+        } break;
+        case 'w': {
+            out->type = ParrotRegexTokenType_ALPHA;
+        } break;
+        case 'W': {
+            out->type = ParrotRegexTokenType_NOT_ALPHA;
+        } break;
+        case 's': {
+            out->type = ParrotRegexTokenType_WHITESPACE;
+        } break;
+        case 'S': {
+            out->type = ParrotRegexTokenType_NOT_WHITESPACE;
+        } break;
+
+        default: {
+            out->type = ParrotRegexTokenType_CHAR;
+            out->data.char_data = *pattern;
+        } break;
+        }
+
+        // Skip the character
+        pattern++;
+    } break;
+    case '[': {
+        size_t class_index = 0;
+        char *class = calloc(MAX_CLASS_SIZE + 1, sizeof(char));
+        ParrotScope_push_free(scope, class);
+
+        out->type = ParrotRegexTokenType_CHAR_CLASS;
+
+        if (*pattern == '^') {
+            pattern++;
+            out->type = ParrotRegexTokenType_INV_CHAR_CLASS;
+
+            if (!(*pattern)) {
+                return NULL;
+            }
+        }
+
+        while (class_index <= MAX_CLASS_SIZE && *pattern != ']') {
+            if (!(*pattern)) {
+                // ']' was not found before end of string
+                return NULL;
+            }
+
+            if (*pattern == '\\') {
+                pattern++;
+                if (!(*pattern)) {
+                    return NULL;
+                }
+
+                class[class_index++] = *pattern++;
+                continue;
+            }
+
+            class[class_index++] = *pattern++;
+        }
+
+        // Skip ']'
+        pattern++;
+
+        out->data.class_data = class;
+    } break;
+    case '(': {
+        out->type = ParrotRegexTokenType_GROUP;
+
+        out->data.group_data.p_arr_tokens = malloc(sizeof(*out->data.group_data.p_arr_tokens));
+        ParrotScope_push_free(scope, out->data.group_data.p_arr_tokens);
+        *out->data.group_data.p_arr_tokens = NULL;
+        ParrotScope_push_arrfree(scope, *out->data.group_data.p_arr_tokens);
+
+        ParrotRegexToken sub_token = {0};
+        while (*pattern != ')') {
+            if (!(*pattern)) {
+                return NULL;
+            }
+
+            pattern = next_token(scope, pattern, &sub_token);
+            if (!pattern) {
+                return NULL;
+            }
+
+            ParrotArray_push(*out->data.group_data.p_arr_tokens, sub_token);
+        }
+
+        // Skip ')'
+        pattern++;
+
+        ParrotArray_push(*out->data.group_data.p_arr_tokens,
+                         ((ParrotRegexToken){
+                             .type = ParrotRegexTokenType_EOF,
+                         }));
+    } break;
+    default: {
+        out->type = ParrotRegexTokenType_CHAR;
+        out->data.char_data = c;
+    } break;
+    }
+
+    if (!c) {
+        return NULL;
+    }
+
+    return pattern;
+}
 
 ParrotRegex *ParrotRegex_new(const char *pattern) {
     ParrotRegex *self = PARROT_ALLOC(ParrotRegex);
@@ -52,116 +196,21 @@ ParrotRegex *ParrotRegex_new(const char *pattern) {
     ParrotScope_push_arrfree(self->scope, self->arr_expr);
     ParrotScope_push_arrfree(self->scope, self->arr_class_buf);
 
-    int i = 0;
-    while (pattern[i] != '\0') {
-        char c = pattern[i];
+    while (*pattern) {
+        ParrotRegexToken token = {0};
+        pattern = next_token(self->scope, pattern, &token);
 
-        ParrotRegexExpr node = {0};
-
-        switch (c) {
-        case '^': {
-            node.type = ParrotRegexExprType_BEGIN;
-        } break;
-        case '$': {
-            node.type = ParrotRegexExprType_END;
-        } break;
-        case '.': {
-            node.type = ParrotRegexExprType_DOT;
-        } break;
-        case '*': {
-            node.type = ParrotRegexExprType_STAR;
-        } break;
-        case '+': {
-            node.type = ParrotRegexExprType_PLUS;
-        } break;
-        case '?': {
-            node.type = ParrotRegexExprType_QUESTIONMARK;
-        } break;
-
-        case '\\': {
-            if (pattern[i + 1] != '\0') {
-                i++;
-                switch (pattern[i]) {
-                case 'd': {
-                    node.type = ParrotRegexExprType_DIGIT;
-                } break;
-                case 'D': {
-                    node.type = ParrotRegexExprType_NOT_DIGIT;
-                } break;
-                case 'w': {
-                    node.type = ParrotRegexExprType_ALPHA;
-                } break;
-                case 'W': {
-                    node.type = ParrotRegexExprType_NOT_ALPHA;
-                } break;
-                case 's': {
-                    node.type = ParrotRegexExprType_WHITESPACE;
-                } break;
-                case 'S': {
-                    node.type = ParrotRegexExprType_NOT_WHITESPACE;
-                } break;
-
-                default: {
-                    node.type = ParrotRegexExprType_CHAR;
-                    node.data.ch = pattern[i];
-                } break;
-                }
-            }
-        } break;
-
-        case '[': {
-            size_t class_index = 0;
-            char *class = calloc(MAX_CLASS_SIZE + 1, sizeof(char));
-            ParrotScope_push_free(self->scope, class);
-
-            node.type = ParrotRegexExprType_CHAR_CLASS;
-
-            if (pattern[i + 1] == '^') {
-                node.type = ParrotRegexExprType_INV_CHAR_CLASS;
-                i++;
-
-                if (pattern[i + 1] == 0) {
-                    ParrotScope_delete(self->scope);
-                    return NULL;
-                }
-            }
-
-            while (class_index <= MAX_CLASS_SIZE && (pattern[++i] != ']') && (pattern[i] != '\0')) {
-                if (pattern[i] == '\\') {
-                    if (pattern[i + 1] == 0) {
-                        ParrotScope_delete(self->scope);
-                        return NULL;
-                    }
-
-                    class[class_index++] = pattern[i++];
-                }
-
-                class[class_index++] = pattern[i];
-            }
-
-            class[class_index++] = '\0';
-            node.data.class_data = class;
-        } break;
-
-        default: {
-            node.type = ParrotRegexExprType_CHAR;
-            node.data.ch = c;
-        } break;
-        }
-
-        ParrotArray_push(self->arr_expr, node);
-
-        if (pattern[i] == 0) {
+        if (!pattern) {
             ParrotScope_delete(self->scope);
             return NULL;
         }
 
-        i++;
+        ParrotArray_push(self->arr_expr, token);
     }
 
     ParrotArray_push(self->arr_expr,
-                     ((ParrotRegexExpr){
-                         .type = ParrotRegexExprType_EOF,
+                     ((ParrotRegexToken){
+                         .type = ParrotRegexTokenType_EOF,
                      }));
 
     return self;
@@ -177,37 +226,30 @@ void ParrotRegex_vdelete(void *self) {
     ParrotScope_delete(self);
 }
 
-static int matchalphanum(char c) {
+static bool match_alphanum(char c) {
     return ((c == '_') || isalpha(c) || isdigit(c));
 }
 
-static int matchrange(char c, const char *str) {
+static bool match_range(char c, const char *str) {
     return ((c != '-') && (str[0] != '\0') && (str[0] != '-') && (str[1] == '-') && (str[2] != '\0') &&
             ((c >= str[0]) && (c <= str[2])));
 }
 
-static int matchdot(char c) {
-#if defined(RE_DOT_MATCHES_NEWLINE) && (RE_DOT_MATCHES_NEWLINE == 1)
+static bool match_dot(char c) {
     (void)c;
-    return 1;
-#else
-    return c != '\n' && c != '\r';
-#endif
-}
-static int ismetachar(char c) {
-    return ((c == 's') || (c == 'S') || (c == 'w') || (c == 'W') || (c == 'd') || (c == 'D'));
+    return true;
 }
 
-static int matchmetachar(char c, const char *str) {
+static bool match_metachar(char c, const char *str) {
     switch (str[0]) {
     case 'd':
         return isdigit(c);
     case 'D':
         return !isdigit(c);
     case 'w':
-        return matchalphanum(c);
+        return match_alphanum(c);
     case 'W':
-        return !matchalphanum(c);
+        return !match_alphanum(c);
     case 's':
         return isspace(c);
     case 'S':
@@ -217,15 +259,19 @@ static int matchmetachar(char c, const char *str) {
     }
 }
 
-static bool matchcharclass(char c, const char *str) {
+static bool is_metachar(char c) {
+    return ((c == 's') || (c == 'S') || (c == 'w') || (c == 'W') || (c == 'd') || (c == 'D'));
+}
+
+static bool match_charclass(char c, const char *str) {
     do {
-        if (matchrange(c, str)) {
+        if (match_range(c, str)) {
             return true;
         } else if (str[0] == '\\') {
             str++;
-            if (matchmetachar(c, str)) {
+            if (match_metachar(c, str)) {
                 return true;
-            } else if ((c == str[0]) && !ismetachar(c)) {
+            } else if ((c == str[0]) && !is_metachar(c)) {
                 return true;
             }
         } else if (c == str[0]) {
@@ -240,100 +286,146 @@ static bool matchcharclass(char c, const char *str) {
     return false;
 }
 
-static bool matchone(ParrotRegexExpr p, char c) {
+static bool match_one(ParrotRegexToken p, char c) {
     switch (p.type) {
-    case ParrotRegexExprType_DOT:
-        return matchdot(c);
-    case ParrotRegexExprType_CHAR_CLASS:
-        return matchcharclass(c, (const char *)p.data.class_data);
-    case ParrotRegexExprType_INV_CHAR_CLASS:
-        return !matchcharclass(c, (const char *)p.data.class_data);
-    case ParrotRegexExprType_DIGIT:
+    case ParrotRegexTokenType_DOT:
+        return match_dot(c);
+    case ParrotRegexTokenType_CHAR_CLASS:
+        return match_charclass(c, (const char *)p.data.class_data);
+    case ParrotRegexTokenType_INV_CHAR_CLASS:
+        return !match_charclass(c, (const char *)p.data.class_data);
+    case ParrotRegexTokenType_DIGIT:
         return isdigit(c);
-    case ParrotRegexExprType_NOT_DIGIT:
+    case ParrotRegexTokenType_NOT_DIGIT:
         return !isdigit(c);
-    case ParrotRegexExprType_ALPHA:
+    case ParrotRegexTokenType_ALPHA:
         return isalnum(c);
-    case ParrotRegexExprType_NOT_ALPHA:
+    case ParrotRegexTokenType_NOT_ALPHA:
         return !isalnum(c);
-    case ParrotRegexExprType_WHITESPACE:
+    case ParrotRegexTokenType_WHITESPACE:
         return isspace(c);
-    case ParrotRegexExprType_NOT_WHITESPACE:
+    case ParrotRegexTokenType_NOT_WHITESPACE:
         return !isspace(c);
     default:
-        return (p.data.ch == c);
+        return (p.data.char_data == c);
     }
 }
 
-static bool matchpattern(ParrotRegexExpr *pattern, const char *text, size_t *out_size);
+static bool match_pattern(ParrotRegexToken *pattern, const char *text, size_t *out_size);
 
-static bool matchstar(ParrotRegexExpr p, ParrotRegexExpr *pattern, const char *text, size_t *out_size) {
-    size_t prelen = *out_size;
-    const char *prepoint = text;
-
-    while ((text[0] != '\0') && matchone(p, *text)) {
-        text++;
-        (*out_size)++;
+static ptrdiff_t match_atom(ParrotRegexToken token, const char *text) {
+    if (token.type == ParrotRegexTokenType_GROUP) {
+        size_t consumed = 0;
+        if (match_pattern(*token.data.group_data.p_arr_tokens, text, &consumed)) {
+            return (ptrdiff_t)consumed;
+        }
+        return -1;
     }
 
-    while (text >= prepoint) {
-        if (matchpattern(pattern, text--, out_size)) {
+    if (text[0] == '\0') {
+        return -1;
+    }
+    return match_one(token, text[0]) ? 1 : -1;
+}
+
+static bool match_star(ParrotRegexToken p, ParrotRegexToken *pattern, const char *text, size_t *out_size) {
+    size_t prelen = *out_size;
+
+    const char *positions[256];
+    size_t sizes[256];
+    int count = 0;
+
+    positions[count] = text;
+    sizes[count++] = *out_size;
+
+    ptrdiff_t step;
+    while ((step = match_atom(p, text)) > 0 && count < 256) {
+        text += step;
+        (*out_size) += step;
+        positions[count] = text;
+        sizes[count++] = *out_size;
+    }
+
+    for (int i = count - 1; i >= 0; i--) {
+        *out_size = sizes[i];
+        if (match_pattern(pattern, positions[i], out_size))
             return true;
-        }
-        (*out_size)--;
     }
 
     *out_size = prelen;
     return false;
 }
 
-static bool matchplus(ParrotRegexExpr p, ParrotRegexExpr *pattern, const char *text, size_t *out_size) {
-    const char *prepoint = text;
+static bool match_plus(ParrotRegexToken token, ParrotRegexToken *pattern, const char *text, size_t *out_size) {
+    size_t prelen = *out_size;
 
-    while ((text[0] != '\0') && matchone(p, *text)) {
-        text++;
-        (*out_size)++;
+    const char *positions[256];
+    size_t sizes[256];
+    int count = 0;
+
+    ptrdiff_t step;
+
+    while ((step = match_atom(token, text)) > 0 && count < 256) {
+        text += step;
+        *out_size += step;
+
+        positions[count] = text;
+        sizes[count] = *out_size;
+        count++;
     }
 
-    while (text > prepoint) {
-        if (matchpattern(pattern, text--, out_size)) {
-            return true;
-        }
-        (*out_size)--;
-    }
+    for (int i = count - 1; i >= 0; i--) {
+        *out_size = sizes[i];
 
-    return false;
-}
-
-static bool matchquestion(ParrotRegexExpr p, ParrotRegexExpr *pattern, const char *text, size_t *out_size) {
-    if (p.type == ParrotRegexExprType_EOF)
-        return true;
-    if (matchpattern(pattern, text, out_size))
-        return true;
-    if (*text && matchone(p, *text++)) {
-        if (matchpattern(pattern, text, out_size)) {
-            (*out_size)++;
+        if (match_pattern(pattern, positions[i], out_size)) {
             return true;
         }
     }
 
+    *out_size = prelen;
     return false;
 }
 
-static bool matchpattern(ParrotRegexExpr *pattern, const char *text, size_t *out_size) {
+static bool match_question(ParrotRegexToken token, ParrotRegexToken *pattern, const char *text, size_t *out_size) {
+    size_t prelen = *out_size;
+
+    if (token.type == ParrotRegexTokenType_EOF) {
+        return true;
+    }
+
+    if (match_pattern(pattern, text, out_size)) {
+        return true;
+    }
+
+    *out_size = prelen;
+
+    ptrdiff_t step = match_atom(token, text);
+
+    if (step > 0) {
+        if (match_pattern(pattern, text + step, out_size)) {
+            *out_size += step;
+            return true;
+        }
+    }
+
+    *out_size = prelen;
+    return false;
+}
+
+static bool match_pattern(ParrotRegexToken *pattern, const char *text, size_t *out_size) {
     size_t pre = *out_size;
     do {
-        if ((pattern[0].type == ParrotRegexExprType_EOF) || (pattern[1].type == ParrotRegexExprType_QUESTIONMARK)) {
-            return matchquestion(pattern[0], &pattern[2], text, out_size);
-        } else if (pattern[1].type == ParrotRegexExprType_STAR) {
-            return matchstar(pattern[0], &pattern[2], text, out_size);
-        } else if (pattern[1].type == ParrotRegexExprType_PLUS) {
-            return matchplus(pattern[0], &pattern[2], text, out_size);
-        } else if ((pattern[0].type == ParrotRegexExprType_END) && pattern[1].type == ParrotRegexExprType_EOF) {
+        if ((pattern[0].type == ParrotRegexTokenType_EOF) || (pattern[1].type == ParrotRegexTokenType_QUESTIONMARK)) {
+            return match_question(pattern[0], &pattern[2], text, out_size);
+        } else if (pattern[1].type == ParrotRegexTokenType_STAR) {
+            return match_star(pattern[0], &pattern[2], text, out_size);
+        } else if (pattern[1].type == ParrotRegexTokenType_PLUS) {
+            return match_plus(pattern[0], &pattern[2], text, out_size);
+        } else if ((pattern[0].type == ParrotRegexTokenType_END) && pattern[1].type == ParrotRegexTokenType_EOF) {
             return (text[0] == '\0');
         }
         (*out_size)++;
-    } while ((text[0] != '\0') && matchone(*pattern++, *text++));
+    } while ((text[0] != '\0') && match_one(*pattern++, *text++));
 
     *out_size = pre;
     return false;
@@ -348,11 +440,11 @@ bool ParrotRegex_match(ParrotRegex *self, const char *text, size_t *out_size) {
         out_size = &tmp_size;
     }
 
-    if (self->arr_expr[0].type == ParrotRegexExprType_BEGIN) {
-        return matchpattern(&self->arr_expr[1], text, out_size);
+    if (self->arr_expr[0].type == ParrotRegexTokenType_BEGIN) {
+        return match_pattern(&self->arr_expr[1], text, out_size);
     }
 
-    return matchpattern(self->arr_expr, text, out_size);
+    return match_pattern(self->arr_expr, text, out_size);
 }
 
 ptrdiff_t ParrotRegex_match_all(ParrotRegex *self, const char *text, size_t *out_size) {

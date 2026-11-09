@@ -5,6 +5,7 @@
 #include "parrot/core/coroutine.h"
 #include "parrot/core/math.h"
 #include "parrot/core/os.h"
+#include "parrot/core/regex.h"
 #include "parrot/core/scheduler.h"
 #include "parrot/core/util.h"
 
@@ -193,6 +194,40 @@ static void co_test_matrix(void *cox) {
     free(matrices);
 }
 
+static void co_test_regex(void *cox) {
+    TestSharedData *co = cox;
+
+    const char *test_cases[][2] = {
+        {"a+", "aaa"},
+        {"a+", "b"},
+        {"a*", "bbb"},
+        {"a+b", "aaab"},
+        {"a+ab", "aaab"},
+        {"a+b", "aaa"},
+        {"^[A-Z][a-z]+(\\s[A-Z][a-z]+)*$", "John"},
+        {"^[A-Z][a-z]+(\\s[A-Z][a-z]+)*$", "John Smith"},
+    };
+
+    bool test_results[PARROT_ARRAY_LEN(test_cases)] = {false};
+    for (size_t i = 0; i < PARROT_ARRAY_LEN(test_cases); i++) {
+        ParrotRegex *regex = ParrotRegex_new(test_cases[i][0]);
+        test_results[i] = ParrotRegex_match(regex, test_cases[i][1], NULL);
+        ParrotRegex_delete(regex);
+        Parrot_coroutine_yield(co);
+    }
+
+    co->done = true;
+    Parrot_coroutine_yield(co);
+
+    printf("Regex...\n");
+    for (size_t i = 0; i < PARROT_ARRAY_LEN(test_cases); i++) {
+        printf("  %s on \"%s\" with pattern `%s`\n",
+               test_results[i] ? "Match" : "No match",
+               test_cases[i][1],
+               test_cases[i][0]);
+    }
+}
+
 int main(void) {
     srand(time(NULL));
 
@@ -205,6 +240,7 @@ int main(void) {
     ParrotScheduler_create_task(scheduler, TestTask)->coroutine = Parrot_coroutine_create(TestSharedData, co_test_array);
     ParrotScheduler_create_task(scheduler, TestTask)->coroutine =
         Parrot_coroutine_create(TestSharedData, co_test_scheduler);
+    ParrotScheduler_create_task(scheduler, TestTask)->coroutine = Parrot_coroutine_create(TestSharedData, co_test_regex);
 
     for (;;) {
         TestTask *task = ParrotScheduler_next(scheduler, TestTask);
