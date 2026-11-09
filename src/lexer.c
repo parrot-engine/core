@@ -41,8 +41,7 @@ static size_t rule_matches(const ParrotLexerRule *rule, const char *str) {
         return 1;
     case ParrotLexerRuleType_REGEX: {
         size_t match_size = 0;
-        ptrdiff_t match_position = ParrotRegex_match(rule->data.regex.regex, str, &match_size);
-        return match_position == 0 ? match_size : 0;
+        return ParrotRegex_match(rule->data.regex.regex, str, &match_size) ? match_size : 0;
     }
     case ParrotLexerRuleType_FUNC:
         return rule->data.func.match(rule->data.func.ctx, str);

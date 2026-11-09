@@ -110,10 +110,11 @@ ParrotRegex *ParrotRegex_new(const char *pattern) {
         } break;
 
         case '[': {
+            size_t class_index = 0;
             char *class = calloc(MAX_CLASS_SIZE + 1, sizeof(char));
             ParrotScope_push_free(self->scope, class);
 
-            size_t j = 0;
+            node.type = ParrotRegexExprType_CHAR_CLASS;
 
             if (pattern[i + 1] == '^') {
                 node.type = ParrotRegexExprType_INV_CHAR_CLASS;
@@ -125,22 +126,20 @@ ParrotRegex *ParrotRegex_new(const char *pattern) {
                 }
             }
 
-            node.type = ParrotRegexExprType_CHAR_CLASS;
-
-            while (j <= MAX_CLASS_SIZE && (pattern[++i] != ']') && (pattern[i] != '\0')) {
+            while (class_index <= MAX_CLASS_SIZE && (pattern[++i] != ']') && (pattern[i] != '\0')) {
                 if (pattern[i] == '\\') {
                     if (pattern[i + 1] == 0) {
                         ParrotScope_delete(self->scope);
                         return NULL;
                     }
 
-                    class[j++] = pattern[i++];
+                    class[class_index++] = pattern[i++];
                 }
 
-                class[j++] = pattern[i];
+                class[class_index++] = pattern[i];
             }
 
-            class[j++] = '\0';
+            class[class_index++] = '\0';
             node.data.class_data = class;
         } break;
 
@@ -340,7 +339,7 @@ static bool matchpattern(ParrotRegexExpr *pattern, const char *text, size_t *out
     return false;
 }
 
-ptrdiff_t ParrotRegex_match(ParrotRegex *self, const char *text, size_t *out_size) {
+bool ParrotRegex_match(ParrotRegex *self, const char *text, size_t *out_size) {
     PARROT_FAIL_NULL(self);
     PARROT_FAIL_NULL(text);
 
@@ -350,21 +349,21 @@ ptrdiff_t ParrotRegex_match(ParrotRegex *self, const char *text, size_t *out_siz
     }
 
     if (self->arr_expr[0].type == ParrotRegexExprType_BEGIN) {
-        return ((matchpattern(&self->arr_expr[1], text, out_size)) ? 0 : -1);
+        return matchpattern(&self->arr_expr[1], text, out_size);
     }
 
-    ptrdiff_t idx = -1;
-    do {
-        idx++;
+    return matchpattern(self->arr_expr, text, out_size);
+}
 
-        if (matchpattern(self->arr_expr, text, out_size)) {
-            if (text[0] == '\0') {
-                return -1;
-            }
+ptrdiff_t ParrotRegex_match_all(ParrotRegex *self, const char *text, size_t *out_size) {
+    PARROT_FAIL_NULL(self);
+    PARROT_FAIL_NULL(text);
 
-            return idx;
+    for (size_t i = 0; text[i] != '\0'; i++) {
+        if (ParrotRegex_match(self, &text[i], out_size)) {
+            return i;
         }
-    } while (*text++ != '\0');
+    }
 
     return -1;
 }
