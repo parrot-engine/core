@@ -125,6 +125,18 @@ void ParrotLexer_remove(ParrotLexer *self, size_t position) {
     ParrotArray_del(self->arr_stream, position);
 }
 
+size_t ParrotLexer_get_position(ParrotLexer *self) {
+    PARROT_FAIL_NULL(self);
+
+    return self->stream_position;
+}
+
+void ParrotLexer_set_position(ParrotLexer *self, size_t position) {
+    PARROT_FAIL_NULL(self);
+
+    self->stream_position = position;
+}
+
 ParrotLexerToken ParrotLexer_pop(ParrotLexer *self) {
     PARROT_FAIL_NULL(self);
 

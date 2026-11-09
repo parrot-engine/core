@@ -88,6 +88,9 @@ PARROT_API void ParrotLexer_push(ParrotLexer *self, ParrotLexerToken token);
 PARROT_API void ParrotLexer_insert(ParrotLexer *self, size_t position, ParrotLexerToken token);
 PARROT_API void ParrotLexer_remove(ParrotLexer *self, size_t position);
 
+PARROT_API size_t ParrotLexer_get_position(ParrotLexer *self);
+PARROT_API void ParrotLexer_set_position(ParrotLexer *self, size_t position);
+
 /// Returns the EOF token if out of bounds
 PARROT_API ParrotLexerToken ParrotLexer_pop(ParrotLexer *self);
 /**
