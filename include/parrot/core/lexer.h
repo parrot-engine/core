@@ -75,6 +75,8 @@ typedef struct {
 
     const char *position;
     size_t size;
+
+    void *user;
 } ParrotLexerToken;
 
 PARROT_API ParrotLexer *ParrotLexer_new(int eof_token);
