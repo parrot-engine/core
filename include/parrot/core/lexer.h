@@ -9,6 +9,7 @@
 typedef enum {
     ParrotLexerRuleType_END = 0,
 
+    ParrotLexerRuleType_REGEX_OBJECT,
     ParrotLexerRuleType_REGEX,
     ParrotLexerRuleType_FUNC,
 } ParrotLexerRuleType;
@@ -20,11 +21,8 @@ typedef struct {
     int token;
 
     union {
-        struct {
-            ParrotRegex *regex;
-            /// Deletes after construction if false
-            bool borrow;
-        } regex;
+        const char *regex;
+        ParrotRegex *regex_object;
 
         struct {
             /// @returns Amount to advance by or 0 for no match

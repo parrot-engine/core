@@ -35,13 +35,36 @@ void ParrotLexer_vdelete(void *self) {
     ParrotLexer_delete(self);
 }
 
-static size_t rule_matches(const ParrotLexerRule *rule, const char *str) {
+typedef struct {
+    ParrotRegex *regex;
+} LexerContextRuleCacheEntry;
+
+typedef struct {
+    ParrotScope *scope;
+
+    const ParrotLexerRule *ruleset;
+
+    LexerContextRuleCacheEntry rule_cache[];
+} LexerContext;
+
+static size_t lexer_rule_matches(LexerContext *ctx, size_t rule_index, const char *str) {
+    const ParrotLexerRule *rule = &ctx->ruleset[rule_index];
+
     switch (rule->type) {
     case ParrotLexerRuleType_END:
         return 1;
     case ParrotLexerRuleType_REGEX: {
+        if (!ctx->rule_cache[rule_index].regex) {
+            ctx->rule_cache[rule_index].regex = ParrotRegex_new(rule->data.regex);
+            ParrotScope_push(ctx->scope, ParrotRegex_vdelete, ctx->rule_cache[rule_index].regex);
+        }
+
         size_t match_size = 0;
-        return ParrotRegex_match(rule->data.regex.regex, str, &match_size) ? match_size : 0;
+        return ParrotRegex_match(ctx->rule_cache[rule_index].regex, str, &match_size) ? match_size : 0;
+    }
+    case ParrotLexerRuleType_REGEX_OBJECT: {
+        size_t match_size = 0;
+        return ParrotRegex_match(rule->data.regex_object, str, &match_size) ? match_size : 0;
     }
     case ParrotLexerRuleType_FUNC:
         return rule->data.func.match(rule->data.func.ctx, str);
@@ -54,22 +77,39 @@ void ParrotLexer_lex(ParrotLexer *self, const ParrotLexerRule *ruleset, const ch
     PARROT_FAIL_NULL(ruleset);
     PARROT_FAIL_NULL(str);
 
+    size_t rule_count = 0;
+    for (const ParrotLexerRule *rule = ruleset; rule->type != ParrotLexerRuleType_END; rule++) {
+        rule_count++;
+    }
+
+    size_t cache_size = rule_count * sizeof(LexerContextRuleCacheEntry);
+
+    LexerContext *ctx = malloc(sizeof(LexerContext) + cache_size);
+    memset(ctx, 0, sizeof(LexerContext) + cache_size);
+
+    ctx->scope = ParrotScope_new(NULL);
+    ParrotScope_push_free(ctx->scope, ctx);
+
+    ctx->ruleset = ruleset;
+
     while (*str) {
-        const ParrotLexerRule *rule = ruleset;
+        size_t rule_index = 0;
 
         const char *match = str;
         size_t match_size = 0;
 
         for (;;) {
-            match_size = rule_matches(rule, str);
+            match_size = lexer_rule_matches(ctx, rule_index, str);
             if (match_size > 0) {
                 str += match_size;
                 break;
             }
 
             // An END token returns 1
-            rule++;
+            rule_index++;
         }
+
+        const ParrotLexerRule *rule = &ruleset[rule_index];
 
         if (rule->token < 0) {
             continue;
@@ -83,17 +123,7 @@ void ParrotLexer_lex(ParrotLexer *self, const ParrotLexerRule *ruleset, const ch
                          });
     }
 
-    for (const ParrotLexerRule *rule = ruleset; rule->type != ParrotLexerRuleType_END; rule++) {
-        if (rule->type != ParrotLexerRuleType_REGEX) {
-            continue;
-        }
-
-        if (rule->data.regex.borrow) {
-            continue;
-        }
-
-        ParrotRegex_delete(rule->data.regex.regex);
-    }
+    ParrotScope_delete(ctx->scope);
 }
 
 void ParrotLexer_push(ParrotLexer *self, ParrotLexerToken token) {
