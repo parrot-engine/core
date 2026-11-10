@@ -37,9 +37,9 @@ extern ParrotCrashHandlerFunc Parrot_crash_handler;
 
 #define PARROT_ARRAY_LEN(arr) (sizeof(arr) / sizeof(*(arr)))
 
-#define PARROT_META_SIZE(type, user_size) (PARROT_ALIGN_UP(sizeof(type), 16) + (user_size))
-#define PARROT_META(type, data) ((type *)((uint8_t *)(data) - PARROT_META_SIZE(type, 0)))
-#define PARROT_META_USER(type, meta) ((void *)((uint8_t *)(meta) + PARROT_META_SIZE(type, 0)))
+#define PARROT_META_SIZE(size, user_size) (PARROT_ALIGN_UP(size, 16) + (user_size))
+#define PARROT_META(size, data) ((void *)((uint8_t *)(data) - PARROT_META_SIZE(size, 0)))
+#define PARROT_META_USER(size, meta) ((void *)((uint8_t *)(meta) + PARROT_META_SIZE(size, 0)))
 
 #define PARROT_FAIL_FMT(fmt, ...)                                                                                       \
     do {                                                                                                                \

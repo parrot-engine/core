@@ -50,8 +50,8 @@ void ParrotScheduler_vdelete(void *self) {
 void *ParrotScheduler_create_taskx(ParrotScheduler *self) {
     PARROT_FAIL_NULL(self);
 
-    ParrotSchedulerTaskMeta *meta = malloc(PARROT_META_SIZE(ParrotSchedulerTaskMeta, self->task_size));
-    memset(meta, 0, PARROT_META_SIZE(ParrotSchedulerTaskMeta, self->task_size));
+    ParrotSchedulerTaskMeta *meta = malloc(PARROT_META_SIZE(sizeof(ParrotSchedulerTaskMeta), self->task_size));
+    memset(meta, 0, PARROT_META_SIZE(sizeof(ParrotSchedulerTaskMeta), self->task_size));
 
     meta->scope = ParrotScope_new(self->scope);
     ParrotScope_push_free(meta->scope, meta);
@@ -61,13 +61,13 @@ void *ParrotScheduler_create_taskx(ParrotScheduler *self) {
     meta->running_counter = UINT64_MAX;
 
     ParrotArray_put_key(self->arr_tasks, meta, &meta, sizeof(ParrotSchedulerTaskMeta *));
-    return PARROT_META_USER(ParrotSchedulerTaskMeta, meta);
+    return PARROT_META_USER(sizeof(ParrotSchedulerTaskMeta), meta);
 }
 
 void ParrotScheduler_delete_task(void *task) {
     PARROT_FAIL_NULL(task);
 
-    ParrotSchedulerTaskMeta *meta = PARROT_META(ParrotSchedulerTaskMeta, task);
+    ParrotSchedulerTaskMeta *meta = PARROT_META(sizeof(ParrotSchedulerTaskMeta), task);
 
     ParrotArray_delkx(meta->self->arr_tasks, &meta, sizeof(ParrotSchedulerTaskMeta *));
     ParrotScope_delete(meta->scope);
@@ -76,7 +76,7 @@ void ParrotScheduler_delete_task(void *task) {
 void ParrotScheduler_set_task_priority(void *task, /* <0 = blocked */ int priority) {
     PARROT_FAIL_NULL(task);
 
-    ParrotSchedulerTaskMeta *meta = PARROT_META(ParrotSchedulerTaskMeta, task);
+    ParrotSchedulerTaskMeta *meta = PARROT_META(sizeof(ParrotSchedulerTaskMeta), task);
 
     meta->priority = priority;
 }
@@ -84,7 +84,7 @@ void ParrotScheduler_set_task_priority(void *task, /* <0 = blocked */ int priori
 void ParrotScheduler_begin_task(void *task) {
     PARROT_FAIL_NULL(task);
 
-    ParrotSchedulerTaskMeta *meta = PARROT_META(ParrotSchedulerTaskMeta, task);
+    ParrotSchedulerTaskMeta *meta = PARROT_META(sizeof(ParrotSchedulerTaskMeta), task);
 
     meta->running_counter = Parrot_os_get_performance_counter();
 }
@@ -92,7 +92,8 @@ void ParrotScheduler_begin_task(void *task) {
 void ParrotScheduler_end_task(void *task) {
     PARROT_FAIL_NULL(task);
 
-    uint64_t time = Parrot_os_get_performance_counter() - PARROT_META(ParrotSchedulerTaskMeta, task)->running_counter;
+    uint64_t time = Parrot_os_get_performance_counter() -
+                    ((ParrotSchedulerTaskMeta *)PARROT_META(sizeof(ParrotSchedulerTaskMeta), task))->running_counter;
     ParrotScheduler_end_task_manual(task, time, Parrot_os_get_performance_frequency());
 }
 
@@ -104,7 +105,7 @@ void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t fre
         frequency = 1;
     }
 
-    ParrotSchedulerTaskMeta *meta = PARROT_META(ParrotSchedulerTaskMeta, task);
+    ParrotSchedulerTaskMeta *meta = PARROT_META(sizeof(ParrotSchedulerTaskMeta), task);
 
     PARROT_RET_COND(meta->running_counter == UINT64_MAX);
 
@@ -146,7 +147,7 @@ void *ParrotScheduler_nextx(ParrotScheduler *self) {
     }
 
     if (best) {
-        return PARROT_META_USER(ParrotSchedulerTaskMeta, best);
+        return PARROT_META_USER(sizeof(ParrotSchedulerTaskMeta), best);
     }
 
     return NULL;

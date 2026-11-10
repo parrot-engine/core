@@ -40,19 +40,19 @@ static void free_hash_table(ArrayHashEntry *table, size_t capacity) {
 }
 
 void *ParrotArray_initx(size_t element_size, size_t initial_capacity) {
-    ArrayMeta *self = malloc(PARROT_META_SIZE(ArrayMeta, initial_capacity * element_size));
+    ArrayMeta *self = malloc(PARROT_META_SIZE(sizeof(ArrayMeta), initial_capacity * element_size));
     memset(self, 0, sizeof(ArrayMeta));
 
     self->element_size = element_size;
     self->capacity = initial_capacity;
 
-    return PARROT_META_USER(ArrayMeta, self);
+    return PARROT_META_USER(sizeof(ArrayMeta), self);
 }
 
 void ParrotArray_freex(void *arr) {
     PARROT_FAIL_NULL(arr);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     if (self->hash_table) {
         free_hash_table(self->hash_table, self->hash_table_capacity);
@@ -64,37 +64,37 @@ void ParrotArray_freex(void *arr) {
 size_t ParrotArray_sizex(const void *arr) {
     PARROT_FAIL_NULL(arr);
 
-    return PARROT_META(ArrayMeta, arr)->size;
+    return ((ArrayMeta *)PARROT_META(sizeof(ArrayMeta), arr))->size;
 }
 
 size_t ParrotArray_capacityx(const void *arr) {
     PARROT_FAIL_NULL(arr);
 
-    return PARROT_META(ArrayMeta, arr)->capacity;
+    return ((ArrayMeta *)PARROT_META(sizeof(ArrayMeta), arr))->capacity;
 }
 
 void *ParrotArray_reservex(void *arr, size_t new) {
     PARROT_FAIL_NULL(arr);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     size_t remaining_capacity = self->capacity - self->size;
     PARROT_RET_COND_V(new <= remaining_capacity, arr);
 
     self->capacity = PARROT_MAX(self->capacity + self->capacity / 2, new);
-    self = realloc(self, PARROT_META_SIZE(ArrayMeta, self->capacity * self->element_size));
+    self = realloc(self, PARROT_META_SIZE(sizeof(ArrayMeta), self->capacity * self->element_size));
 
-    return PARROT_META_USER(ArrayMeta, self);
+    return PARROT_META_USER(sizeof(ArrayMeta), self);
 }
 
 void *ParrotArray_allocx(void *arr, size_t index, size_t count) {
     PARROT_FAIL_NULL(arr);
 
-    PARROT_FAIL_COND(index > PARROT_META(ArrayMeta, arr)->size);
+    PARROT_FAIL_COND(index > ((ArrayMeta *)PARROT_META(sizeof(ArrayMeta), arr))->size);
 
     arr = ParrotArray_reservex(arr, count);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     void *from = (uint8_t *)arr + index * self->element_size;
     void *to = (uint8_t *)from + count * self->element_size;
@@ -122,7 +122,7 @@ void *ParrotArray_allocx(void *arr, size_t index, size_t count) {
 void ParrotArray_delx(void *arr, size_t index, size_t count) {
     PARROT_FAIL_NULL(arr);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     PARROT_FAIL_COND(index >= self->size);
     PARROT_FAIL_COND(index + count > self->size);
@@ -230,7 +230,7 @@ static void rehash_table(ArrayMeta *self) {
 void ParrotArray_mapx(void *arr, size_t index, const void *key, size_t key_size) {
     PARROT_FAIL_NULL(arr);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     PARROT_FAIL_COND(index >= self->size);
 
@@ -248,7 +248,7 @@ void ParrotArray_mapx(void *arr, size_t index, const void *key, size_t key_size)
 ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size) {
     PARROT_FAIL_NULL(arr);
 
-    ArrayMeta *self = PARROT_META(ArrayMeta, arr);
+    ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
 
     PARROT_RET_COND_V(!self->hash_table, -1);
 
@@ -263,7 +263,7 @@ ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size) {
 void *ParrotArray_findpx(void *arr, const void *key, size_t key_size) {
     ptrdiff_t index = ParrotArray_findx(arr, key, key_size);
     PARROT_RET_COND_V(index < 0, NULL);
-    return (uint8_t *)arr + PARROT_META(ArrayMeta, arr)->element_size * index;
+    return (uint8_t *)arr + ((ArrayMeta *)PARROT_META(sizeof(ArrayMeta), arr))->element_size * index;
 }
 
 void ParrotArray_delkx(void *arr, const void *key, size_t key_size) {

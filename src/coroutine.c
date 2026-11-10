@@ -36,8 +36,8 @@ static void munmap_wrapper(void *ctxx) {
 void *Parrot_coroutine_createx(size_t size, void (*func)(void *coroutine)) {
     PARROT_FAIL_NULL(func);
 
-    ParrotCoroutineMeta *meta = malloc(PARROT_META_SIZE(ParrotCoroutineMeta, size));
-    memset(meta, 0, PARROT_META_SIZE(ParrotCoroutineMeta, size));
+    ParrotCoroutineMeta *meta = malloc(PARROT_META_SIZE(sizeof(ParrotCoroutineMeta), size));
+    memset(meta, 0, PARROT_META_SIZE(sizeof(ParrotCoroutineMeta), size));
 
     meta->scope = ParrotScope_new(NULL);
     ParrotScope_push_free(meta->scope, meta);
@@ -67,22 +67,22 @@ void *Parrot_coroutine_createx(size_t size, void (*func)(void *coroutine)) {
     ParrotScope_push_free(meta->scope, stack);
 #endif
 
-    meta->state = ParrotOSThreadState_new(func, PARROT_META_USER(ParrotCoroutineMeta, meta), stack, STACK_SIZE);
+    meta->state = ParrotOSThreadState_new(func, PARROT_META_USER(sizeof(ParrotCoroutineMeta), meta), stack, STACK_SIZE);
     ParrotScope_push(meta->scope, ParrotOSThreadState_vdelete, meta->state);
 
-    return PARROT_META_USER(ParrotCoroutineMeta, meta);
+    return PARROT_META_USER(sizeof(ParrotCoroutineMeta), meta);
 }
 
 void Parrot_coroutine_delete(void *coroutine) {
     PARROT_FAIL_NULL(coroutine);
 
-    ParrotScope_delete(PARROT_META(ParrotCoroutineMeta, coroutine)->scope);
+    ParrotScope_delete(((ParrotCoroutineMeta *)PARROT_META(sizeof(ParrotCoroutineMeta), coroutine))->scope);
 }
 
 bool Parrot_coroutine_resume(void *coroutine) {
     PARROT_FAIL_NULL(coroutine);
 
-    ParrotCoroutineMeta *meta = PARROT_META(ParrotCoroutineMeta, coroutine);
+    ParrotCoroutineMeta *meta = PARROT_META(sizeof(ParrotCoroutineMeta), coroutine);
 
     PARROT_RET_COND_V(!meta->state, false);
 
@@ -103,7 +103,7 @@ bool Parrot_coroutine_resume(void *coroutine) {
 void Parrot_coroutine_yield(void *coroutine) {
     PARROT_FAIL_NULL(coroutine);
 
-    ParrotCoroutineMeta *meta = PARROT_META(ParrotCoroutineMeta, coroutine);
+    ParrotCoroutineMeta *meta = PARROT_META(sizeof(ParrotCoroutineMeta), coroutine);
 
     meta->yield = true;
     ParrotOSThreadState_restore(meta->return_state, &meta->state);
