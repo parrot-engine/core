@@ -13,18 +13,15 @@ typedef enum {
 } ParrotVFSOpenFlags;
 
 struct ParrotVFSOverlay {
-    /// Returns 0 if failed to list
-    size_t (*list_count)(ParrotVFSOverlay *self, const char *path);
-    /// Returns NULL if failed to list
-    char *(*list_malloc)(ParrotVFSOverlay *self, const char *path, size_t index);
+    size_t (*list_count_or_zero)(ParrotVFSOverlay *self, const char *path);
+    char *(*list_malloc_or_null)(ParrotVFSOverlay *self, const char *path, size_t index);
 
     void (*mkdir)(ParrotVFSOverlay *self, const char *path);
     void (*rm)(ParrotVFSOverlay *self, const char *path);
     bool (*is_dir)(ParrotVFSOverlay *self, const char *path);
     bool (*is_file)(ParrotVFSOverlay *self, const char *path);
 
-    /// Returns NULL if failed to open
-    ParrotBuffer *(*open)(ParrotVFSOverlay *self, const char *path, ParrotVFSOpenFlags flags);
+    ParrotBuffer *(*open_or_null)(ParrotVFSOverlay *self, const char *path, ParrotVFSOpenFlags flags);
 };
 
 PARROT_API ParrotVFS *ParrotVFS_new(void);
@@ -41,10 +38,8 @@ PARROT_API void ParrotVFS_overlay(ParrotVFS *self,
                                   const char *path,
                                   /* Does not take ownership */ const ParrotVFSOverlay *overlay);
 
-/// Returns 0 if failed to list
-PARROT_API size_t ParrotVFS_list_count(ParrotVFS *self, const char *path);
-/// Returns NULL if failed to list
-PARROT_API char *ParrotVFS_list_malloc(ParrotVFS *self, const char *path, size_t index);
+PARROT_API size_t ParrotVFS_list_count_or_zero(ParrotVFS *self, const char *path);
+PARROT_API char *ParrotVFS_list_malloc_or_null(ParrotVFS *self, const char *path, size_t index);
 
 /// Recursively creates parents by default
 PARROT_API void ParrotVFS_mkdir(ParrotVFS *self, const char *path);
@@ -53,7 +48,6 @@ PARROT_API bool ParrotVFS_exists(ParrotVFS *self, const char *path);
 PARROT_API bool ParrotVFS_is_dir(ParrotVFS *self, const char *path);
 PARROT_API bool ParrotVFS_is_file(ParrotVFS *self, const char *path);
 
-/// Returns NULL if failed to open
-PARROT_API ParrotBuffer *ParrotVFS_open(ParrotVFS *self, const char *path, ParrotVFSOpenFlags flags);
+PARROT_API ParrotBuffer *ParrotVFS_open_or_null(ParrotVFS *self, const char *path, ParrotVFSOpenFlags flags);
 
 #endif // PARROT_CORE_INCLUDE_PARROT_CORE_VFS_H_

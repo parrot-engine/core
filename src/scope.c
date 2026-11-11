@@ -158,7 +158,7 @@ uint32_t ParrotScope_push_arrfree_raw(ParrotScope *self, void **arr) {
 void ParrotScope_cancel(ParrotScope *self, uint32_t id) {
     PARROT_FAIL_NULL(self);
 
-    ptrdiff_t index = ParrotArray_find(self->hm_stack, id);
+    ptrdiff_t index = ParrotArray_find_or_neg(self->hm_stack, id);
     if (index >= 0) {
         ParrotScopeEntry *entry = &self->hm_stack[index];
         if (entry->free_func) {

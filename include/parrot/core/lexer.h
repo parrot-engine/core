@@ -25,8 +25,7 @@ typedef struct {
         ParrotRegex *regex_object;
 
         struct {
-            /// @returns Amount to advance by or 0 for no match
-            size_t (*match)(void *ctx, const char *str);
+            size_t (*match_count_or_zero)(void *ctx, const char *str);
             void *ctx;
         } func;
     } data;
@@ -52,7 +51,7 @@ typedef struct {
             },                                                                                                          \
     }
 
-#define PARROT_LEXER_RULE_FUNC_TOKEN(p_token, p_match, p_ctx)                                                           \
+#define PARROT_LEXER_RULE_FUNC_TOKEN(p_token, p_match_count_or_zero, p_ctx)                                             \
     {                                                                                                                   \
         .type = ParrotLexerRuleType_FUNC,                                                                               \
         .token = p_token,                                                                                               \
@@ -60,7 +59,7 @@ typedef struct {
             {                                                                                                           \
                 .func =                                                                                                 \
                     {                                                                                                   \
-                        .match = p_match,                                                                               \
+                        .match = p_match_count_or_zero,                                                                 \
                         .ctx = p_ctx,                                                                                   \
                     },                                                                                                  \
             },                                                                                                          \
@@ -91,12 +90,7 @@ PARROT_API void ParrotLexer_remove(ParrotLexer *self, size_t position);
 PARROT_API size_t ParrotLexer_get_position(ParrotLexer *self);
 PARROT_API void ParrotLexer_set_position(ParrotLexer *self, size_t position);
 
-/// Returns the EOF token if out of bounds
-PARROT_API ParrotLexerToken ParrotLexer_pop(ParrotLexer *self);
-/**
- * Peek N tokens ahead where 0 is the next token.
- * Returns the EOF token if out of bounds.
- */
-PARROT_API ParrotLexerToken ParrotLexer_peek(ParrotLexer *self, size_t n);
+PARROT_API ParrotLexerToken ParrotLexer_pop_or_eof(ParrotLexer *self);
+PARROT_API ParrotLexerToken ParrotLexer_peek_or_eof(ParrotLexer *self, size_t ahead_n);
 
 #endif // PARROT_CORE_INCLUDE_PARROT_CORE_LEXER_H_

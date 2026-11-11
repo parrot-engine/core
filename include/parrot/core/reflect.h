@@ -230,8 +230,7 @@ PARROT_API char *ParrotReflect_get_type_field_name_malloc(ParrotReflect *self, s
 PARROT_API char *ParrotReflect_get_type_field_basename_malloc(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_size(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type, size_t field);
-/// Returns 0 if no array
-PARROT_API size_t ParrotReflect_get_type_field_array_size(ParrotReflect *self, size_t type, size_t field);
+PARROT_API size_t ParrotReflect_get_type_field_array_size_or_zero(ParrotReflect *self, size_t type, size_t field);
 PARROT_API char *
 ParrotReflect_get_type_field_tag_malloc(ParrotReflect *self, size_t type, size_t field, const char *key);
 

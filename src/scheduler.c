@@ -114,7 +114,7 @@ void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t fre
     meta->running_counter = UINT64_MAX;
 }
 
-void *ParrotScheduler_nextx(ParrotScheduler *self) {
+void *ParrotScheduler_next_or_nullx(ParrotScheduler *self) {
     PARROT_FAIL_NULL(self);
 
     ParrotSchedulerTaskMeta *best = NULL;

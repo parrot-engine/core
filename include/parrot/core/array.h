@@ -37,7 +37,7 @@
         ParrotArray_alloc(arr, 1);                                                                                      \
         *((arr) + (_idx)) = (value);                                                                                    \
                                                                                                                         \
-        ptrdiff_t _old_idx = ParrotArray_findx(arr, key, key_size);                                                     \
+        ptrdiff_t _old_idx = ParrotArray_find_or_negx(arr, key, key_size);                                              \
         ParrotArray_mapx(arr, _idx, key, key_size);                                                                     \
                                                                                                                         \
         if (_old_idx >= 0) {                                                                                            \
@@ -46,14 +46,10 @@
     } while (0)
 #define ParrotArray_put(arr, value) ParrotArray_put_key(arr, value, &(value).key, sizeof((value).key));
 #define ParrotArray_puts(arr, value) ParrotArray_put_key(arr, value, (value).key, strlen((value).key));
-/// Returns <0 if not found
-#define ParrotArray_find(arr, key) ((arr) ? ParrotArray_findx(arr, &(key), sizeof(key)) : -1)
-/// Returns <0 if not found
-#define ParrotArray_finds(arr, key) ((arr) ? ParrotArray_findx(arr, key, strlen(key)) : -1)
-/// Returns NULL if not found
-#define ParrotArray_findp(arr, key) ((arr) ? ParrotArray_findpx(arr, &(key), sizeof(key)) : NULL)
-/// Returns NULL if not found
-#define ParrotArray_findsp(arr, key) ((arr) ? ParrotArray_findpx(arr, key, strlen(key)) : NULL)
+#define ParrotArray_find_or_neg(arr, key) ((arr) ? ParrotArray_find_or_negx(arr, &(key), sizeof(key)) : -1)
+#define ParrotArray_finds_or_neg(arr, key) ((arr) ? ParrotArray_find_or_negx(arr, key, strlen(key)) : -1)
+#define ParrotArray_findp_or_null(arr, key) ((arr) ? ParrotArray_findp_or_nullx(arr, &(key), sizeof(key)) : NULL)
+#define ParrotArray_findsp_or_null(arr, key) ((arr) ? ParrotArray_findp_or_nullx(arr, key, strlen(key)) : NULL)
 #define ParrotArray_delk(arr, key) ((arr) ? ParrotArray_delkx(arr, &(key), sizeof(key)) : (void)0)
 #define ParrotArray_delks(arr, key) ((arr) ? ParrotArray_delkx(arr, key, strlen(key)) : (void)0)
 
@@ -69,10 +65,8 @@ PARROT_API void *ParrotArray_allocx(void *arr, size_t index, size_t count);
 PARROT_API void ParrotArray_delx(void *arr, size_t index, size_t count);
 
 PARROT_API void ParrotArray_mapx(void *arr, size_t index, const void *key, size_t key_size);
-/// Returns <0 if not found
-PARROT_API ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size);
-/// Returns NULL if not found
-PARROT_API void *ParrotArray_findpx(void *arr, const void *key, size_t key_size);
+PARROT_API ptrdiff_t ParrotArray_find_or_negx(void *arr, const void *key, size_t key_size);
+PARROT_API void *ParrotArray_findp_or_nullx(void *arr, const void *key, size_t key_size);
 PARROT_API void ParrotArray_delkx(void *arr, const void *key, size_t key_size);
 
 #endif // PARROT_CORE_INCLUDE_PARROT_CORE_CONTAINERS_H_

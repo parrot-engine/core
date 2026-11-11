@@ -22,9 +22,7 @@ PARROT_API void ParrotScheduler_begin_task(void *task);
 PARROT_API void ParrotScheduler_end_task(void *task);
 PARROT_API void ParrotScheduler_end_task_manual(void *task, uint64_t duration, uint64_t frequency);
 
-/// See ParrotScheduler_nextx
-#define ParrotScheduler_next(self, type) ((type *)ParrotScheduler_nextx(self))
-/// Returns NULL if no task
-PARROT_API void *ParrotScheduler_nextx(ParrotScheduler *self);
+#define ParrotScheduler_next_or_null(self, type) ((type *)ParrotScheduler_next_or_nullx(self))
+PARROT_API void *ParrotScheduler_next_or_nullx(ParrotScheduler *self);
 
 #endif // PARROT_CORE_INCLUDE_PARROT_CORE_SCHEDULER_H_

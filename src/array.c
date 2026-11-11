@@ -245,7 +245,7 @@ void ParrotArray_mapx(void *arr, size_t index, const void *key, size_t key_size)
     }
 }
 
-ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size) {
+ptrdiff_t ParrotArray_find_or_negx(void *arr, const void *key, size_t key_size) {
     PARROT_FAIL_NULL(arr);
 
     ArrayMeta *self = PARROT_META(sizeof(ArrayMeta), arr);
@@ -260,14 +260,14 @@ ptrdiff_t ParrotArray_findx(void *arr, const void *key, size_t key_size) {
     return -1;
 }
 
-void *ParrotArray_findpx(void *arr, const void *key, size_t key_size) {
-    ptrdiff_t index = ParrotArray_findx(arr, key, key_size);
+void *ParrotArray_findp_or_nullx(void *arr, const void *key, size_t key_size) {
+    ptrdiff_t index = ParrotArray_find_or_negx(arr, key, key_size);
     PARROT_RET_COND_V(index < 0, NULL);
     return (uint8_t *)arr + ((ArrayMeta *)PARROT_META(sizeof(ArrayMeta), arr))->element_size * index;
 }
 
 void ParrotArray_delkx(void *arr, const void *key, size_t key_size) {
-    ptrdiff_t index = ParrotArray_findx(arr, key, key_size);
+    ptrdiff_t index = ParrotArray_find_or_negx(arr, key, key_size);
     PARROT_RET_COND(index < 0);
     ParrotArray_delx(arr, index, 1);
 }

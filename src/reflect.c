@@ -332,7 +332,7 @@ void ParrotReflect_register(ParrotReflect *self, const ParrotReflectDescription 
 }
 
 void ParrotReflect_unregister(ParrotReflect *self, const char *type) {
-    size_t type_info_index = ParrotArray_find(self->sh_types, type);
+    size_t type_info_index = ParrotArray_find_or_neg(self->sh_types, type);
     ParrotReflectTypeInfo *type_info = &self->sh_types[type_info_index];
     if (type_info) {
         ParrotReflectTypeInfo local_type_info = *type_info;
@@ -342,7 +342,7 @@ void ParrotReflect_unregister(ParrotReflect *self, const char *type) {
         return;
     }
 
-    size_t alias_info_index = ParrotArray_find(self->sh_aliases, type);
+    size_t alias_info_index = ParrotArray_find_or_neg(self->sh_aliases, type);
     ParrotReflectAliasInfo *alias_info = &self->sh_aliases[alias_info_index];
     if (alias_info) {
         ParrotReflectAliasInfo local_alias_info = *alias_info;
@@ -409,7 +409,7 @@ ptrdiff_t ParrotReflect_resolve_type_ex(
 
     type = parsed_type;
     for (;;) {
-        ParrotReflectAliasInfo *alias_info = ParrotArray_findp(self->sh_aliases, type);
+        ParrotReflectAliasInfo *alias_info = ParrotArray_findp_or_null(self->sh_aliases, type);
         if (!alias_info) {
             break;
         }
@@ -417,7 +417,7 @@ ptrdiff_t ParrotReflect_resolve_type_ex(
         type = alias_info->value;
     }
 
-    ptrdiff_t ret = ParrotArray_find(self->sh_types, type);
+    ptrdiff_t ret = ParrotArray_find_or_neg(self->sh_types, type);
     if (out_parsed_type) {
         *out_parsed_type = parsed_type;
     } else {
@@ -454,15 +454,15 @@ char *ParrotReflect_get_type_tag(ParrotReflect *self, size_t type, const char *k
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
 
-    PARROT_RET_COND_V(ParrotArray_find(*type_info->sh_tags, key) <= 0, NULL);
-    char *tag = ((ParrotReflectTag *)ParrotArray_findp(*type_info->sh_tags, key))->value;
+    PARROT_RET_COND_V(ParrotArray_find_or_neg(*type_info->sh_tags, key) <= 0, NULL);
+    char *tag = ((ParrotReflectTag *)ParrotArray_findp_or_null(*type_info->sh_tags, key))->value;
     return strcpy(calloc(strlen(tag) + 1, sizeof(char)), tag);
 }
 
 ptrdiff_t ParrotReflect_get_type_field(ParrotReflect *self, size_t type, const char *name) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
-    return ParrotArray_find(*type_info->sh_fields, name);
+    return ParrotArray_find_or_neg(*type_info->sh_fields, name);
 }
 
 size_t ParrotReflect_get_type_field_count(ParrotReflect *self, size_t type) {
@@ -523,7 +523,7 @@ size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type
     return field_info->array_index;
 }
 
-size_t ParrotReflect_get_type_field_array_size(ParrotReflect *self, size_t type, size_t field) {
+size_t ParrotReflect_get_type_field_array_size_or_zero(ParrotReflect *self, size_t type, size_t field) {
     ParrotReflectTypeInfo *type_info = resolve_type_info(self, type);
     PARROT_FAIL_NULL(type_info);
     PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
@@ -539,8 +539,8 @@ char *ParrotReflect_get_type_field_tag(ParrotReflect *self, size_t type, size_t 
     PARROT_FAIL_COND(field >= ParrotArray_size(*type_info->sh_fields));
     ParrotReflectTypeFieldInfo *field_info = &(*type_info->sh_fields)[field];
 
-    PARROT_RET_COND_V(ParrotArray_find(*field_info->sh_tags, key) <= 0, NULL);
-    char *tag = ((ParrotReflectTag *)ParrotArray_findp(*field_info->sh_tags, key))->value;
+    PARROT_RET_COND_V(ParrotArray_find_or_neg(*field_info->sh_tags, key) <= 0, NULL);
+    char *tag = ((ParrotReflectTag *)ParrotArray_findp_or_null(*field_info->sh_tags, key))->value;
     return strcpy(calloc(strlen(tag) + 1, sizeof(char)), tag);
 }
 

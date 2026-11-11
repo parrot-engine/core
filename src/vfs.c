@@ -131,7 +131,7 @@ static ParrotVFS *find_mount(ParrotVFS *self, const char *path) {
     ParrotScope_push_free(scope, simplified_path);
 
     for (;;) {
-        ParrotVFSMountEntry **p_entry = ParrotArray_findsp(self->sh_mounts, simplified_path);
+        ParrotVFSMountEntry **p_entry = ParrotArray_findsp_or_null(self->sh_mounts, simplified_path);
         if (p_entry) {
             ParrotScope_delete(scope);
             return (*p_entry)->vfs;
@@ -218,7 +218,7 @@ static bool is_direct_descandant(const char *path, const char *parent) {
     return true;
 }
 
-size_t ParrotVFS_list_count(ParrotVFS *self, const char *path) {
+size_t ParrotVFS_list_count_or_zero(ParrotVFS *self, const char *path) {
     PARROT_FAIL_NULL(self);
     PARROT_FAIL_NULL(path);
 
@@ -227,14 +227,14 @@ size_t ParrotVFS_list_count(ParrotVFS *self, const char *path) {
 
     ParrotVFS *mount = find_mount(self, path);
     if (mount) {
-        ret = ParrotVFS_list_count(mount, path);
+        ret = ParrotVFS_list_count_or_zero(mount, path);
         goto end;
     }
 
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ptrdiff_t entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+    ptrdiff_t entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
     if (entry_index < 0) {
         goto end;
     }
@@ -257,7 +257,7 @@ end:
     return ret;
 }
 
-char *ParrotVFS_list_malloc(ParrotVFS *self, const char *path, size_t index) {
+char *ParrotVFS_list_malloc_or_null(ParrotVFS *self, const char *path, size_t index) {
     PARROT_FAIL_NULL(self);
     PARROT_FAIL_NULL(path);
 
@@ -266,14 +266,14 @@ char *ParrotVFS_list_malloc(ParrotVFS *self, const char *path, size_t index) {
 
     ParrotVFS *mount = find_mount(self, path);
     if (mount) {
-        ret = ParrotVFS_list_malloc(mount, path, index);
+        ret = ParrotVFS_list_malloc_or_null(mount, path, index);
         goto end;
     }
 
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ptrdiff_t entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+    ptrdiff_t entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
     if (entry_index < 0) {
         goto end;
     }
@@ -313,7 +313,7 @@ void ParrotVFS_mkdir(ParrotVFS *self, const char *path) {
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    if (ParrotArray_findsp(self->sh_ramfs, simplified_path)) {
+    if (ParrotArray_findsp_or_null(self->sh_ramfs, simplified_path)) {
         ParrotScope_delete(scope);
         return;
     }
@@ -333,10 +333,10 @@ void ParrotVFS_mkdir(ParrotVFS *self, const char *path) {
 
     simplified_path[parent_seperator_index] = '\0';
 
-    ptrdiff_t parent_entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+    ptrdiff_t parent_entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
     if (parent_entry_index < 0) {
         ParrotVFS_mkdir(self, simplified_path);
-        parent_entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+        parent_entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
 
         if (parent_entry_index < 0) {
             ParrotScope_delete(scope);
@@ -372,7 +372,7 @@ void ParrotVFS_rm(ParrotVFS *self, const char *path) {
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ptrdiff_t entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+    ptrdiff_t entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
     if (entry_index < 0) {
         ParrotScope_delete(scope);
         return;
@@ -389,8 +389,8 @@ void ParrotVFS_rm(ParrotVFS *self, const char *path) {
     char **delete_list = NULL;
     ParrotScope_push_arrfree(scope, delete_list);
 
-    for (size_t i = 0; i < ParrotVFS_list_count(self, simplified_path); i++) {
-        char *subpath = ParrotVFS_list_malloc(self, simplified_path, i);
+    for (size_t i = 0; i < ParrotVFS_list_count_or_zero(self, simplified_path); i++) {
+        char *subpath = ParrotVFS_list_malloc_or_null(self, simplified_path, i);
         ParrotScope_push_free(scope, subpath);
         ParrotArray_push(delete_list, subpath);
     }
@@ -425,7 +425,7 @@ bool ParrotVFS_is_dir(ParrotVFS *self, const char *path) {
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ParrotVFSRAMEntry *entry = *(ParrotVFSRAMEntry **)ParrotArray_findsp(self->sh_ramfs, simplified_path);
+    ParrotVFSRAMEntry *entry = *(ParrotVFSRAMEntry **)ParrotArray_findsp_or_null(self->sh_ramfs, simplified_path);
     ret = entry && !entry->data;
 
 end:
@@ -449,7 +449,7 @@ bool ParrotVFS_is_file(ParrotVFS *self, const char *path) {
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ParrotVFSRAMEntry *entry = *(ParrotVFSRAMEntry **)ParrotArray_findsp(self->sh_ramfs, simplified_path);
+    ParrotVFSRAMEntry *entry = *(ParrotVFSRAMEntry **)ParrotArray_findsp_or_null(self->sh_ramfs, simplified_path);
     ret = entry && entry->data;
 
 end:
@@ -481,7 +481,7 @@ static bool ramfs_buffer_read(ParrotScope *scope, size_t offset, size_t size, ui
     return true;
 }
 
-ParrotBuffer *ParrotVFS_open(ParrotVFS *self, const char *path, ParrotVFSOpenFlags flags) {
+ParrotBuffer *ParrotVFS_open_or_null(ParrotVFS *self, const char *path, ParrotVFSOpenFlags flags) {
     PARROT_FAIL_NULL(self);
     PARROT_FAIL_NULL(path);
 
@@ -490,14 +490,14 @@ ParrotBuffer *ParrotVFS_open(ParrotVFS *self, const char *path, ParrotVFSOpenFla
 
     ParrotVFS *mount = find_mount(self, path);
     if (mount) {
-        ret = ParrotVFS_open(mount, path, flags);
+        ret = ParrotVFS_open_or_null(mount, path, flags);
         goto end;
     }
 
     char *simplified_path = simplify_path_malloc(path);
     ParrotScope_push_free(scope, simplified_path);
 
-    ParrotVFSRAMEntry **p_entry = ParrotArray_findsp(self->sh_ramfs, simplified_path);
+    ParrotVFSRAMEntry **p_entry = ParrotArray_findsp_or_null(self->sh_ramfs, simplified_path);
     ParrotVFSRAMEntry *entry = p_entry ? *p_entry : NULL;
 
     if (!entry) {
@@ -515,7 +515,7 @@ ParrotBuffer *ParrotVFS_open(ParrotVFS *self, const char *path, ParrotVFSOpenFla
 
         simplified_path[parent_seperator_index] = '\0';
 
-        ptrdiff_t parent_entry_index = ParrotArray_finds(self->sh_ramfs, simplified_path);
+        ptrdiff_t parent_entry_index = ParrotArray_finds_or_neg(self->sh_ramfs, simplified_path);
         if (parent_entry_index < 0) {
             goto end;
         }

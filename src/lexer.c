@@ -47,7 +47,7 @@ typedef struct {
     LexerContextRuleCacheEntry rule_cache[];
 } LexerContext;
 
-static size_t lexer_rule_matches(LexerContext *ctx, size_t rule_index, const char *str) {
+static size_t lexer_rule_match_count_or_zero(LexerContext *ctx, size_t rule_index, const char *str) {
     const ParrotLexerRule *rule = &ctx->ruleset[rule_index];
 
     switch (rule->type) {
@@ -55,7 +55,7 @@ static size_t lexer_rule_matches(LexerContext *ctx, size_t rule_index, const cha
         return 1;
     case ParrotLexerRuleType_REGEX: {
         if (!ctx->rule_cache[rule_index].regex) {
-            ctx->rule_cache[rule_index].regex = ParrotRegex_new(rule->data.regex);
+            ctx->rule_cache[rule_index].regex = ParrotRegex_new_or_null(rule->data.regex);
             ParrotScope_push(ctx->scope, ParrotRegex_vdelete, ctx->rule_cache[rule_index].regex);
         }
 
@@ -67,7 +67,7 @@ static size_t lexer_rule_matches(LexerContext *ctx, size_t rule_index, const cha
         return ParrotRegex_match(rule->data.regex_object, str, &match_size) ? match_size : 0;
     }
     case ParrotLexerRuleType_FUNC:
-        return rule->data.func.match(rule->data.func.ctx, str);
+        return rule->data.func.match_count_or_zero(rule->data.func.ctx, str);
     }
     return 0;
 }
@@ -99,7 +99,7 @@ void ParrotLexer_lex(ParrotLexer *self, const ParrotLexerRule *ruleset, const ch
         size_t match_size = 0;
 
         for (;;) {
-            match_size = lexer_rule_matches(ctx, rule_index, str);
+            match_size = lexer_rule_match_count_or_zero(ctx, rule_index, str);
             if (match_size > 0) {
                 str += match_size;
                 break;
@@ -167,15 +167,15 @@ void ParrotLexer_set_position(ParrotLexer *self, size_t position) {
     self->stream_position = position;
 }
 
-ParrotLexerToken ParrotLexer_pop(ParrotLexer *self) {
+ParrotLexerToken ParrotLexer_pop_or_eof(ParrotLexer *self) {
     PARROT_FAIL_NULL(self);
 
-    ParrotLexerToken token = ParrotLexer_peek(self, 0);
+    ParrotLexerToken token = ParrotLexer_peek_or_eof(self, 0);
     self->stream_position++;
     return token;
 }
 
-ParrotLexerToken ParrotLexer_peek(ParrotLexer *self, size_t n) {
+ParrotLexerToken ParrotLexer_peek_or_eof(ParrotLexer *self, size_t n) {
     PARROT_FAIL_NULL(self);
 
     size_t position = self->stream_position + n;

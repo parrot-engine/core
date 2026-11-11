@@ -187,7 +187,7 @@ static const char *next_token(ParrotScope *scope, const char *pattern, ParrotReg
     return pattern;
 }
 
-ParrotRegex *ParrotRegex_new(const char *pattern) {
+ParrotRegex *ParrotRegex_new_or_null(const char *pattern) {
     ParrotRegex *self = PARROT_ALLOC(ParrotRegex);
 
     self->scope = ParrotScope_new(NULL);
@@ -447,7 +447,7 @@ bool ParrotRegex_match(ParrotRegex *self, const char *text, size_t *out_size) {
     return match_pattern(self->arr_expr, text, out_size);
 }
 
-ptrdiff_t ParrotRegex_match_all(ParrotRegex *self, const char *text, size_t *out_size) {
+ptrdiff_t ParrotRegex_match_position_or_neg(ParrotRegex *self, const char *text, size_t *out_size) {
     PARROT_FAIL_NULL(self);
     PARROT_FAIL_NULL(text);
 

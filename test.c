@@ -107,7 +107,7 @@ static void co_test_scheduler(void *cox) {
                     old_task, (old_task->end - old_task->begin) / resolution, 1.0 / resolution);
             }
 
-            Task *task = ParrotScheduler_next(scheduler, Task);
+            Task *task = ParrotScheduler_next_or_null(scheduler, Task);
             if (!task) {
                 goto end;
             }
@@ -210,7 +210,7 @@ static void co_test_regex(void *cox) {
 
     bool test_results[PARROT_ARRAY_LEN(test_cases)] = {false};
     for (size_t i = 0; i < PARROT_ARRAY_LEN(test_cases); i++) {
-        ParrotRegex *regex = ParrotRegex_new(test_cases[i][0]);
+        ParrotRegex *regex = ParrotRegex_new_or_null(test_cases[i][0]);
         test_results[i] = ParrotRegex_match(regex, test_cases[i][1], NULL);
         ParrotRegex_delete(regex);
         Parrot_coroutine_yield(co);
@@ -243,7 +243,7 @@ int main(void) {
     ParrotScheduler_create_task(scheduler, TestTask)->coroutine = Parrot_coroutine_create(TestSharedData, co_test_regex);
 
     for (;;) {
-        TestTask *task = ParrotScheduler_next(scheduler, TestTask);
+        TestTask *task = ParrotScheduler_next_or_null(scheduler, TestTask);
         if (!task) {
             break;
         }

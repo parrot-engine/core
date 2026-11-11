@@ -63,7 +63,7 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
         .type = type,
     };
 
-    ptrdiff_t index = ParrotArray_find(hm_ptr_map, entry_key);
+    ptrdiff_t index = ParrotArray_find_or_neg(hm_ptr_map, entry_key);
 
     if (index >= 0) {
         ParrotScope_delete(work_scope);
@@ -241,7 +241,7 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
             char *basename = ParrotReflect_get_type_field_basename_malloc(reflect, type, j);
             ParrotScope_push_free(work_scope, basename);
 
-            size_t count = ParrotReflect_get_type_field_array_size(reflect, type, j);
+            size_t count = ParrotReflect_get_type_field_array_size_or_zero(reflect, type, j);
             if (count == 0) {
                 count = 1;
             }
