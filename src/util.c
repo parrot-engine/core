@@ -20,10 +20,10 @@ char *Parrot_vsprintf_malloc(const char *fmt, va_list ap) {
     }
 
     char test = 0;
-    va_list ap_copy;
-    va_copy(ap_copy, ap);
+    va_list test_ap;
+    va_copy(test_ap, ap);
 
-    char *str = calloc(vsnprintf(&test, 1, fmt, ap_copy) + 1, sizeof(char));
+    char *str = calloc(vsnprintf(&test, 1, fmt, test_ap) + 1, sizeof(char));
     PARROT_RET_COND_V(!str, NULL);
     vsprintf(str, fmt, ap);
 
