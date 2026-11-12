@@ -115,6 +115,17 @@ PARROT_API double Parrot_lerpd(double a, double b, double t);
 
 PARROT_API void ParrotReal_to_float_array(const ParrotReal *src, float *dest, size_t count);
 
+typedef enum {
+    ParrotAxis_X = 0,
+    ParrotAxis_WIDTH = ParrotAxis_X,
+
+    ParrotAxis_Y,
+    ParrotAxis_HEIGHT = ParrotAxis_Y,
+
+    ParrotAxis_Z,
+    ParrotAxis_DEPTH = ParrotAxis_Z,
+} ParrotAxis;
+
 typedef struct {
     ParrotReal x;
     ParrotReal y;
