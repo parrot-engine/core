@@ -209,7 +209,7 @@ static uint32_t queue_object(ObjectEntry **p_arr_objects,
             char *field_typename = ParrotReflect_get_type_field_typename_malloc(reflect, type, j);
             ParrotScope_push_free(work_scope, field_typename);
 
-            ptrdiff_t field_type = ParrotReflect_resolve_type(reflect, field_typename);
+            ptrdiff_t field_type = ParrotReflect_resolve_type_or_neg(reflect, field_typename);
             if (field_type < 0) {
                 continue;
             }

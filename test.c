@@ -53,7 +53,7 @@ static void co_test_array(void *cox) {
 static void co_test_scheduler(void *cox) {
     TestSharedData *co = cox;
 
-    const int tasks = 10;
+    const size_t tasks = 10;
 
     ParrotScheduler *scheduler = ParrotScheduler_new(Task);
     Task **arr_tasks = NULL;
@@ -83,7 +83,7 @@ static void co_test_scheduler(void *cox) {
     double time = 0;
     const double resolution = 0.001;
 
-    Task **core_tasks = calloc(sizeof(Task *), core_count);
+    Task **core_tasks = calloc(core_count, sizeof(Task *));
     PARROT_FAIL_NULL(core_tasks);
 
     for (int i = 0; i < core_count; i++) {

@@ -18,25 +18,30 @@ typedef enum {
     ParrotReflectEntryType_COLLECTION_DESCRIPTION,
 } ParrotReflectEntryType;
 
-typedef struct ParrotReflectDescription ParrotReflectDescription;
+typedef struct {
+    /// Lifetime should be at least lifetime of reflect
+    const char *key;
+    const void *value;
+} ParrotReflectDescriptionTag;
 
+typedef struct ParrotReflectDescription ParrotReflectDescription;
 struct ParrotReflectDescription {
     ParrotReflectEntryType type;
 
     const char *name;
     /**
-     * NULL-terminated array or keys and values
+     * NULL key-terminated array or keys and nullable values
      *
      * Example:
      * ```
-     * const char *tags[][2] = {
-     *     {"key", "value"},
+     * const ParrotReflectDescriptionTag tags[] = {
+     *     {"key", NULL},
      *     {NULL, NULL},
      * };
      * ```
      *
      */
-    const char *(*tags)[2];
+    ParrotReflectDescriptionTag *tags;
 
     union {
         struct {
@@ -116,7 +121,7 @@ struct ParrotReflectDescription {
             {                                                                                                           \
                 .type_field_data =                                                                                      \
                     {                                                                                                   \
-                        .offset = offsetof(p_type, p_field_name),                                                       \
+                        .offset = /* clang-format jank */ (size_t)(uintptr_t)&((p_type *)0)->p_field_name,              \
                         .field_base_size = sizeof(p_field_type),                                                        \
                         .type = PARROT_STRING(p_field_type),                                                            \
                         .suffix = PARROT_STRING(p_field_suffix),                                                        \
@@ -132,7 +137,7 @@ struct ParrotReflectDescription {
             {                                                                                                           \
                 .type_field_data =                                                                                      \
                     {                                                                                                   \
-                        .offset = offsetof(p_type, p_field_name),                                                       \
+                        .offset = /* clang-format jank */ (size_t)(uintptr_t)&((p_type *)0)->p_field_name,              \
                         .field_base_size = sizeof(p_field_type),                                                        \
                         .type = PARROT_STRING(p_field_type),                                                            \
                         .suffix = PARROT_STRING(p_field_suffix),                                                        \
@@ -202,20 +207,21 @@ PARROT_API char *ParrotReflect_parse_type(const char *type,
                                           /* NULL = unwritten */ size_t *out_ptr_level,
                                           /* NULL = unwritten */ bool *out_is_const);
 
-#define ParrotReflect_resolve_type(self, type) ParrotReflect_resolve_type_ex(self, type, NULL, NULL, NULL)
-/// 0< = Not found
-PARROT_API ptrdiff_t
-ParrotReflect_resolve_type_ex(ParrotReflect *self,
-                              const char *type,
-                              /* NULL = unwritten. See `ParrotReflect_parse_type` return */ char **out_parsed_type,
-                              /* NULL = unwritten */ size_t *out_ptr_level,
-                              /* NULL = unwritten */ bool *out_is_const);
-/// 0< = Not found
-PARROT_API ptrdiff_t ParrotReflect_resolve_type_by_index(ParrotReflect *self, size_t index);
+#define ParrotReflect_resolve_type_or_neg(self, type) ParrotReflect_resolve_type_or_neg_ex(self, type, NULL, NULL, NULL)
+PARROT_API ptrdiff_t ParrotReflect_resolve_type_or_neg_ex(
+    ParrotReflect *self,
+    const char *type,
+    /* NULL = unwritten. See `ParrotReflect_parse_type` return */ char **out_parsed_type,
+    /* NULL = unwritten */ size_t *out_ptr_level,
+    /* NULL = unwritten */ bool *out_is_const);
+PARROT_API ptrdiff_t ParrotReflect_resolve_type_by_index_or_neg(ParrotReflect *self, size_t index);
 
 PARROT_API char *ParrotReflect_get_type_name_malloc(ParrotReflect *self, size_t type);
 PARROT_API size_t ParrotReflect_get_type_size(ParrotReflect *self, size_t type);
-PARROT_API char *ParrotReflect_get_type_tag_malloc(ParrotReflect *self, size_t type, const char *key);
+PARROT_API bool ParrotReflect_get_type_tag_or_null(ParrotReflect *self,
+                                                   size_t type,
+                                                   const char *key,
+                                                   ParrotReflectDescriptionTag *out_or_null);
 
 /// 0< = Not found
 PARROT_API ptrdiff_t ParrotReflect_get_type_field(ParrotReflect *self, size_t type, const char *name);
@@ -231,7 +237,7 @@ PARROT_API char *ParrotReflect_get_type_field_basename_malloc(ParrotReflect *sel
 PARROT_API size_t ParrotReflect_get_type_field_size(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_array_index(ParrotReflect *self, size_t type, size_t field);
 PARROT_API size_t ParrotReflect_get_type_field_array_size_or_zero(ParrotReflect *self, size_t type, size_t field);
-PARROT_API char *
-ParrotReflect_get_type_field_tag_malloc(ParrotReflect *self, size_t type, size_t field, const char *key);
+PARROT_API bool ParrotReflect_get_type_field_tag_or_null(
+    ParrotReflect *self, size_t type, size_t field, const char *key, ParrotReflectDescriptionTag *out_or_null);
 
 #endif // PARROT_CORE_REFLECT_H_
