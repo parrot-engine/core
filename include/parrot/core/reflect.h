@@ -86,11 +86,11 @@ struct ParrotReflectDescription {
     }
 #endif
 
-#define PARROT_REFLECT_TYPE_HEADER(p_type)                                                                              \
+#define PARROT_REFLECT_TYPE_HEADER(p_type, p_tags_or_null)                                                              \
     {                                                                                                                   \
         .type = ParrotReflectEntryType_TYPE_HEADER,                                                                     \
         .name = PARROT_STRING(p_type),                                                                                  \
-        .tags = NULL,                                                                                                   \
+        .tags = p_tags_or_null,                                                                                         \
         .unique_data =                                                                                                  \
             {                                                                                                           \
                 .type_header_data =                                                                                     \
@@ -99,40 +99,11 @@ struct ParrotReflectDescription {
                     },                                                                                                  \
             },                                                                                                          \
     }
-#define PARROT_REFLECT_TYPE_HEADER_TAG(p_type, p_tags)                                                                  \
-    {                                                                                                                   \
-        .type = ParrotReflectEntryType_TYPE_HEADER,                                                                     \
-        .name = PARROT_STRING(p_type),                                                                                  \
-        .tags = p_tags,                                                                                                 \
-        .unique_data =                                                                                                  \
-            {                                                                                                           \
-                .type_header_data =                                                                                     \
-                    {                                                                                                   \
-                        .size = sizeof(p_type),                                                                         \
-                    },                                                                                                  \
-            },                                                                                                          \
-    }
-#define PARROT_REFLECT_TYPE_FIELD(p_type, p_field_type, p_field_name, p_field_suffix)                                   \
+#define PARROT_REFLECT_TYPE_FIELD(p_type, p_field_type, p_field_name, p_field_suffix, p_tags_or_null)                   \
     {                                                                                                                   \
         .type = ParrotReflectEntryType_TYPE_FIELD,                                                                      \
         .name = PARROT_STRING(p_field_name),                                                                            \
-        .tags = NULL,                                                                                                   \
-        .unique_data =                                                                                                  \
-            {                                                                                                           \
-                .type_field_data =                                                                                      \
-                    {                                                                                                   \
-                        .offset = /* clang-format jank */ (size_t)(uintptr_t)&((p_type *)0)->p_field_name,              \
-                        .field_base_size = sizeof(p_field_type),                                                        \
-                        .type = PARROT_STRING(p_field_type),                                                            \
-                        .suffix = PARROT_STRING(p_field_suffix),                                                        \
-                    },                                                                                                  \
-            },                                                                                                          \
-    }
-#define PARROT_REFLECT_TYPE_FIELD_TAG(p_type, p_field_type, p_field_name, p_field_suffix, p_tags)                       \
-    {                                                                                                                   \
-        .type = ParrotReflectEntryType_TYPE_FIELD,                                                                      \
-        .name = PARROT_STRING(p_field_name),                                                                            \
-        .tags = p_tags,                                                                                                 \
+        .tags = p_tags_or_null,                                                                                         \
         .unique_data =                                                                                                  \
             {                                                                                                           \
                 .type_field_data =                                                                                      \

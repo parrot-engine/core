@@ -132,10 +132,10 @@ typedef struct {
 } ParrotVec2;
 
 static const ParrotReflectDescription ParrotVec2_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotVec2),
+    PARROT_REFLECT_TYPE_HEADER(ParrotVec2, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec2, ParrotReal, x, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec2, ParrotReal, y, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec2, ParrotReal, x, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec2, ParrotReal, y, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -160,11 +160,11 @@ typedef struct {
 } ParrotVec3;
 
 static const ParrotReflectDescription ParrotVec3_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotVec3),
+    PARROT_REFLECT_TYPE_HEADER(ParrotVec3, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, x, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, y, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, z, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, x, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, y, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec3, ParrotReal, z, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -191,12 +191,12 @@ typedef struct {
 } ParrotVec4;
 
 static const ParrotReflectDescription ParrotVec4_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotVec4),
+    PARROT_REFLECT_TYPE_HEADER(ParrotVec4, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, x, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, y, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, z, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, w, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, x, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, y, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, z, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotVec4, ParrotReal, w, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -221,9 +221,9 @@ typedef struct {
 } ParrotMat;
 
 static const ParrotReflectDescription ParrotMat_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotMat),
+    PARROT_REFLECT_TYPE_HEADER(ParrotMat, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotMat, ParrotReal, data, [4][4]),
+    PARROT_REFLECT_TYPE_FIELD(ParrotMat, ParrotReal, data, [4][4], NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -253,11 +253,11 @@ typedef struct {
 } ParrotGMatSet;
 
 static const ParrotReflectDescription ParrotGMatSet_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotGMatSet),
+    PARROT_REFLECT_TYPE_HEADER(ParrotGMatSet, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, model, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, view, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, projection, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, model, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, view, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotGMatSet, ParrotMat, projection, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -274,14 +274,14 @@ struct ParrotTransform {
 };
 
 static const ParrotReflectDescription ParrotTransform_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotTransform),
+    PARROT_REFLECT_TYPE_HEADER(ParrotTransform, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotTransform *, parent, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotMat, matrix, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotTransform *, parent, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotMat, matrix, , NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, position, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, rotation, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, scale, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, position, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, rotation, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotTransform, ParrotVec3, scale, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -309,12 +309,12 @@ typedef struct {
 } ParrotColor;
 
 static const ParrotReflectDescription ParrotColor_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotColor),
+    PARROT_REFLECT_TYPE_HEADER(ParrotColor, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, r, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, g, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, b, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, a, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, r, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, g, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, b, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotColor, float, a, , NULL),
 
     PARROT_REFLECT_END(),
 };

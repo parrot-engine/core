@@ -77,10 +77,10 @@ typedef struct {
 } ParrotMutableBinaryImage;
 
 static const ParrotReflectDescription ParrotMutableBinaryImage_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotMutableBinaryImage),
+    PARROT_REFLECT_TYPE_HEADER(ParrotMutableBinaryImage, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotMutableBinaryImage, uint8_t *, data, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotMutableBinaryImage, size_t, size, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotMutableBinaryImage, uint8_t *, data, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotMutableBinaryImage, size_t, size, , NULL),
 
     PARROT_REFLECT_END(),
 };
@@ -93,10 +93,10 @@ typedef struct {
 PARROT_API ParrotBinaryImage ParrotBinaryImage_from_mutable(ParrotMutableBinaryImage image);
 
 static const ParrotReflectDescription ParrotBinaryImage_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotBinaryImage),
+    PARROT_REFLECT_TYPE_HEADER(ParrotBinaryImage, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotBinaryImage, const uint8_t *, data, ),
-    PARROT_REFLECT_TYPE_FIELD(ParrotBinaryImage, size_t, size, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotBinaryImage, const uint8_t *, data, , NULL),
+    PARROT_REFLECT_TYPE_FIELD(ParrotBinaryImage, size_t, size, , NULL),
 
     PARROT_REFLECT_END(),
 };

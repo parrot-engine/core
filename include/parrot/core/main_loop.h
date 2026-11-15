@@ -14,11 +14,11 @@ typedef struct {
 } ParrotMainLoopRunSettings;
 
 static const ParrotReflectDescription ParrotMainLoopRunSettings_description[] = {
-    PARROT_REFLECT_TYPE_HEADER(ParrotMainLoopRunSettings),
+    PARROT_REFLECT_TYPE_HEADER(ParrotMainLoopRunSettings, NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotMainLoopRunSettings, void *, user_data, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotMainLoopRunSettings, void *, user_data, , NULL),
 
-    PARROT_REFLECT_TYPE_FIELD(ParrotMainLoopRunSettings, float, max_fps, ),
+    PARROT_REFLECT_TYPE_FIELD(ParrotMainLoopRunSettings, float, max_fps, , NULL),
 
     PARROT_REFLECT_END(),
 };

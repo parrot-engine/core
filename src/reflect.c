@@ -82,7 +82,7 @@ struct ParrotReflect {
 
 #define X(name, type)                                                                                                   \
     static const ParrotReflectDescription builtin_##name##_description[] = {                                            \
-        PARROT_REFLECT_TYPE_HEADER(type),                                                                               \
+        PARROT_REFLECT_TYPE_HEADER(type, NULL),                                                                         \
         PARROT_REFLECT_END(),                                                                                           \
     };
 BUILTIN_TYPES
